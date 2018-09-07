@@ -1,0 +1,8 @@
+{
+  "name": "@plastic/render",
+  "version": "1.0.0",
+  "description": "React-like rendering layer with @plastic/reactor",
+  "dependencies": {
+    "@plastic/reactor": "1.0.0"
+  }
+}

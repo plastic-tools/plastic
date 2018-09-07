@@ -1,0 +1,27 @@
+{
+  "name": "plastic",
+  "version": "1.0.0",
+  "description": "Lightweight embedded runtimes",
+  "repository": "https://github.com/charlesjolley/plastic",
+  "author": "Charles Jolley <charles@okito.net>",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@types/jest": "^23.3.1",
+    "jest": "^23.5.0",
+    "ts-jest": "^23.1.4",
+    "tslint": "^5.11.0",
+    "typescript": "^3.0.3"
+  },
+  "moduleFileExtensions": [
+    "ts",
+    "tsx",
+    "js",
+    "jsx",
+    "json",
+    "node"
+  ]
+}

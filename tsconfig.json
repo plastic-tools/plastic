@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "esnext",
+    "inlineSourceMap": true,
+    "inlineSources": true,
+    "jsx": "react",
+    "jsxFactory": "h",
+    "baseUrl": ".",
+    "rootDir": ".",
+    "outDir": "dist",
+
+    "forceConsistentCasingInFileNames": true,
+
+    // Environment configuration
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "moduleResolution": "node"
+  },
+  "exclude": ["dist", "demos", "tmp", "node_modules", "res", ".vscode"]
+}
