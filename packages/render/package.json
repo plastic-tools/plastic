@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "React-like rendering layer with @plastic/reactor",
   "dependencies": {
-    "@plastic/reactor": "1.0.0"
+    "@plastic/reactor": "1.0.0",
+    "@plastic/runtime": "1.0.0"
   }
 }

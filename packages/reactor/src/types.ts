@@ -26,15 +26,15 @@ export interface Reactable {
    * completed.
    *
    * @param changes set of changed variables, if they are known. otherwise null
-   * @returns true if you want the reaction to be invoked
+   * @returns false if the reaction becaome invalid and need to be invoked.
    */
-  invalidateIfNeeded(changes?: Set<TrackedValue>): boolean;
+  revalidateReaction(changes?: Set<TrackedValue>): boolean;
 
   /**
    * Called by the reactor if `invalidateIfNeeded()` returns true. This should
    * invoke the reaction, typically recomputing it's state..
    */
-  invoke?(): void;
+  invokeReaction?(): void;
 }
 
 /** Common interface for an installable property. */
@@ -53,6 +53,11 @@ export interface PropertyValue<T = any> {
    * Calling this method should also register a change with the reactor.
    */
   invalidate?(): void;
+
+  /**
+   * If implemented, revalidates the value. Returns true if valid
+   */
+  validate?(changes?: Set<TrackedValue>, rev?: Revision): boolean;
 }
 
 export type Revision = number;
@@ -68,3 +73,10 @@ export const Revision = {
   UNKNOWN: -1,
   INITIAL: 1
 };
+
+/** An object that knows how to compare itself. Used for `reuse()` */
+export interface Comparable {
+  isEqual(x: any): boolean;
+}
+export const isComparable = (x: any): x is Comparable =>
+  "object" === typeof x && !!x && "function" === typeof x.isEqual;

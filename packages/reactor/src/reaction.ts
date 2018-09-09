@@ -25,7 +25,7 @@ export default class Reaction<T = any> implements Reactable {
     if (runFn) this.run = runFn;
   }
 
-  compute?(): T;
+  compute?(priorValue?: T): T;
 
   /**
    * Executed whenever the reaction state is recomputed and it's value has
@@ -46,17 +46,17 @@ export default class Reaction<T = any> implements Reactable {
     return this;
   }
 
-  invalidateIfNeeded(changes: Set<TrackedValue>) {
+  revalidateReaction(changes: Set<TrackedValue>) {
     const valid = this.validate(changes);
     if (!valid) this.invalidate();
-    return !valid; // invoke next it was invalidated.
+    return valid; // invoke next if was invalidated.
   }
 
-  invoke() {
+  invokeReaction() {
     const { _value, _validated } = this;
     const reactor = Reactor.currentReactor;
     const [value, deps] =
-      reactor.capture(this.compute, this) || DEFAULT_COMPUTE_RESULT;
+      reactor.capture(this.compute, this, _value) || DEFAULT_COMPUTE_RESULT;
     if (this.run && (_validated === Revision.NEVER || _value !== value)) {
       reactor.schedule(this._run);
     }

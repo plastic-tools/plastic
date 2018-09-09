@@ -1,5 +1,5 @@
 import Atom from "./atom";
-import ComputedValue from "./computed-value";
+import ComputedValue, { ComputedValueOptions } from "./computed-value";
 import { PropertyValue } from "./types";
 
 // ......................
@@ -76,6 +76,22 @@ const makeAtomDescriptor = <T>(
   return desc;
 };
 
+const currentValueStack: ComputedValue[] = [];
+let currentValue: ComputedValue = null;
+const priorStack: any[] = [];
+const cvopts: ComputedValueOptions = {
+  willRecompute(cv: ComputedValue, priorValue) {
+    currentValueStack.push(currentValue);
+    currentValue = cv;
+    priorStack.push(tracked.prior);
+    tracked.prior = priorValue;
+  },
+  didRecompute() {
+    tracked.prior = priorStack.pop();
+    currentValue = currentValueStack.pop();
+  }
+};
+
 const makeComputedDescriptor = <T>(
   target: Object,
   key: string,
@@ -89,7 +105,7 @@ const makeComputedDescriptor = <T>(
   const desc: TypedPropertyDescriptor<T> = { configurable, enumerable };
   desc.get = makeGetter(key);
   if (set) desc.set = makeSetter(key);
-  setPropertyValue(target, key, new ComputedValue(get, set));
+  setPropertyValue(target, key, new ComputedValue(get, set, cvopts));
   return desc;
 };
 
@@ -115,6 +131,25 @@ interface TrackedFn {
 
   /** Invalidates the tracked property, if supported. Returns true if success */
   invalidate(target: Object, key: string): boolean;
+
+  /** For accessors, set to the prior value for easy resue */
+  prior: any;
+
+  /**
+   * For accessors, call this method if you need to return the same value
+   * but want to mark the return value as changed anyway. Otherwise, returning
+   * the same value will simply revalidate the computed value, preventing a
+   * change.
+   *
+   * Throws exception if called outside of computing a value.
+   *
+   *    get foo() {
+   *       const prior = tracked.prior;
+   *       prior.bar = 'biff';
+   *       return tracked.changed(prior);
+   *    }
+   */
+  changed<T>(v: T): T;
 }
 
 /**
@@ -136,6 +171,11 @@ tracked.invalidate = (target: Object, key: string) => {
   if (pval && "function" === typeof pval.invalidate) {
     pval.invalidate();
   } else return false;
+};
+tracked.prior = null;
+tracked.changed = <T>(v: T) => {
+  currentValue.recordChange();
+  return v;
 };
 
 export default tracked;

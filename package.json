@@ -23,5 +23,9 @@
     "jsx",
     "json",
     "node"
-  ]
+  ],
+  "prettier": {
+    "bracketSpacing": true,
+    "jsxBracketSameLime": true
+  }
 }

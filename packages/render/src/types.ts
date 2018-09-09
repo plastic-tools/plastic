@@ -1,7 +1,12 @@
-type Key = string | number;
-type Ref<T> = (instance: T) => void;
-export type ComponentChild = VNode<any> | string | number | null;
-export type ComponentChildren = ComponentChild[];
+export type Key = string | number;
+export type Context<P = {}> = Readonly<P>;
+export type Ref<T> = (instance: T) => void;
+
+/** Any type acceptable as input to a Renderer */
+export type RenderFunction = () => RenderCommand;
+export type StaticRenderCommand = Readonly<VNode> | string | number | null;
+export type RenderCommand = StaticRenderCommand | RenderFunction;
+export type Children = RenderCommand[];
 
 export interface Attributes {
   [attr: string]: any;
@@ -13,8 +18,8 @@ export interface ClassAttributes<T> extends Attributes {
   ref?: Ref<T>;
 }
 
-export interface MultiDOMAttributes {
-  children?: ComponentChildren;
+export interface PlasticDOMAttributes {
+  children?: Children | RenderCommand;
   dangerouslySetInnerHTML?: {
     __html: string;
   };
@@ -23,53 +28,98 @@ export interface MultiDOMAttributes {
 export type ComponentFactory<P = {}> =
   | ComponentConstructor<P>
   | FunctionalComponent<P>;
+export const isComponentFactory = (x: any): x is ComponentFactory =>
+  !!x && (isComponentConstructor(x) || isFunctionalComponent(x));
 
+const $IsVNode = Symbol();
 export interface VNode<P = {}> {
-  // have to include Function to keep typings happy. :/
-  readonly nodeName: ComponentFactory<P> | string;
-  readonly attributes: P;
-  readonly children: ComponentChildren;
-  readonly key?: Key | null;
+  /** Must be either a component factor or a string for a DOM element */
+  type: ComponentFactory<P> | string;
+
+  /** Any attributes to be applied during rendering */
+  attributes: P;
+
+  /** Any children to render */
+  children: Children;
+
+  /** If supplied will be used to locate and reuse renderers */
+  key?: Key | null;
 }
 
-const $VNode = Symbol();
-const _testVNode = (x: any): x is VNode =>
-  ("function" === typeof x.nodeName || "string" === typeof x.nodeName) &&
-  "object" === typeof x.attributes &&
-  Array.isArray(x.children);
-
-export const isVNode = (x: any): x is VNode => {
-  if ("object" !== typeof x) return false;
-  if (x[$VNode]) return true;
-  return (x[$VNode] = _testVNode(x));
-};
+/**
+ * True if the passed render command is a VNode.
+ * Note that this does not do a deep detection; it will only work with
+ * RenderCommands
+ */
+export const isVNode = (x: RenderCommand): x is VNode =>
+  !!x && "object" === typeof x;
 
 export type RenderableProps<P, RefType = any> = Readonly<
   P &
     Attributes & {
-      children?: ComponentChildren;
+      children?: RenderCommand[];
       ref?: Ref<RefType>;
     }
 >;
 
 interface FunctionalComponent<P = {}> {
-  (props: RenderableProps<P>, context?: {}): VNode<any> | null;
+  (props: RenderableProps<P>, context?: Context): RenderCommand | null;
   displayName?: string;
   defaultProps?: Partial<P>;
 }
 
-interface ComponentConstructor<P = {}, S = {}> {
-  new (props: RenderableProps<P>, context?: any): TrackedComponent<P, S>;
+// incomplete, but best we can do.
+export const isFunctionalComponent = (x: any): x is FunctionalComponent =>
+  "function" === typeof x;
+
+export interface ComponentConstructor<P = {}> {
+  new (props: RenderableProps<P>, context?: Context): RenderableComponent<P>;
   displayName?: string;
   defaultProps?: Partial<P>;
 }
+export const isComponentConstructor = (x: any): x is ComponentConstructor =>
+  !!x &&
+  "function" === typeof x &&
+  (x.prototype === Component.prototype ||
+    x.prototype instanceof Component ||
+    testRenderableComponent(x.prototype));
 
-type AnyComponent<P = {}, S = {}> =
-  | FunctionalComponent<P>
-  | TrackedComponent<P, S>;
+export type AnyComponent<P = {}> =
+  | RenderableComponent<P>
+  | FunctionalComponent<P>;
 
-export interface TrackedComponent<P = {}, S extends {} = {}> {
-  props: Readonly<P>;
-  state: Readonly<S>;
-  readonly vnode: ComponentChild;
+export interface RenderableComponent<P = {}> {
+  /**
+   * The render command computed by this component. Make sure this property
+   * is tracked if it is not constant.
+   */
+  readonly output?: RenderCommand;
+
+  /**
+   * Any context values you want to supply to children. Will be merged with
+   * the parent context by the renderer.
+   */
+  readonly childContext?: Context;
+
+  updateProps(props: Readonly<RenderableProps<P>>, context: Readonly<Context>);
+
+  // Optional callback interface. Matches React
+
+  /** Called just before the DOM representing this component is mounted. */
+  componentWillMount?(): void;
+
+  /** Called just cafter the component DOM mounted, refs will be set */
+  componentDidMount?(): void;
+
+  /** Called just before a component is about to be removed. */
+  componentWillUnmount?(): void;
 }
+
+const testRenderableComponent = (x: any): x is RenderableComponent =>
+  !!x && "object" === typeof x && "function" === typeof x.updateProps;
+
+export const isRenderableComponent = (x: any): x is RenderableComponent =>
+  x instanceof Component ||
+  (!!x && "object" === typeof x && isComponentConstructor(x.constructor));
+
+import Component from "./component";

@@ -41,12 +41,16 @@ export default class Reactor {
    * execution. Returns the return value of the function along with the set
    * of any captured values.
    */
-  capture<T>(fn: () => T, thisArg?: Object): [T, Set<TrackedValue>] {
+  capture<T>(
+    fn: (priorValue?: T) => T,
+    thisArg?: Object,
+    priorValue?: T
+  ): [T, Set<TrackedValue>] {
     const prior = this._accessed;
     const accessed = (this._accessed = new Set());
     let ret: T = null;
     try {
-      ret = fn.call(thisArg);
+      ret = fn.call(thisArg, priorValue);
     } finally {
       this._accessed = prior;
     }
@@ -118,9 +122,9 @@ export default class Reactor {
     this.current++;
     const toInvoke = new Set<Reactable>();
     for (const reaction of reactions) {
-      if (reaction.invalidateIfNeeded(_changes)) toInvoke.add(reaction);
+      if (reaction.revalidateReaction(_changes)) toInvoke.add(reaction);
     }
-    for (const reaction of toInvoke) reaction.invoke();
+    for (const reaction of toInvoke) reaction.invokeReaction();
   };
 
   private _changes = new Set<TrackedValue>();

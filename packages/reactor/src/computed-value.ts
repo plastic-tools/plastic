@@ -1,8 +1,17 @@
 import { Revision, TrackedValue, PropertyValue } from "./types";
 import Reactor from "./reactor";
+import reuse from "./reuse";
 
 export type GetterFn<T = any> = () => T;
 export type SetterFn<T = any> = (v: T) => void;
+
+/** Set to receive some callbacks during computation */
+export interface ComputedValueOptions {
+  /** If set on options, will be called just before value recomputes */
+  willRecompute?<T>(value: ComputedValue<T>, priorValue: T);
+  /** called just after value recomputes */
+  didRecompute?<T>(value: ComputedValue<T>, newValue: T, priorValue: T);
+}
 
 /**
  * Computes a value can caches it. During computation, any tracked variables
@@ -11,7 +20,11 @@ export type SetterFn<T = any> = (v: T) => void;
  */
 export default class ComputedValue<T = any>
   implements TrackedValue, PropertyValue<T> {
-  constructor(readonly getter: GetterFn<T>, readonly setter?: SetterFn<T>) {}
+  constructor(
+    readonly getter: GetterFn<T>,
+    readonly setter?: SetterFn<T>,
+    readonly options: ComputedValueOptions = {}
+  ) {}
 
   get(thisArg: Object = null): T {
     const reactor = Reactor.currentReactor;
@@ -41,11 +54,15 @@ export default class ComputedValue<T = any>
    * @param rev (Optional) revision of record for change. defaults to changed
    */
   recompute(thisArg: Object = null, rev = Reactor.currentReactor.changed) {
-    const getter = this.getter;
-    const [value, deps] = Reactor.currentReactor.capture(getter, thisArg);
-    this._value = value;
+    const { getter, _value, options } = this;
+    const { willRecompute, didRecompute } = options;
+    const reactor = Reactor.currentReactor;
+    if (willRecompute) willRecompute(this, _value);
+    let [value, deps] = reactor.capture(getter, thisArg, _value);
+    this._value = value = reuse(value, _value);
     this._dependencies = deps;
     this._validated = deps.size > 0 ? rev : Revision.CONSTANT;
+    if (didRecompute) didRecompute(this, _value, value);
   }
 
   /**
@@ -55,6 +72,11 @@ export default class ComputedValue<T = any>
   invalidate() {
     this._value = this._dependencies = undefined;
     this._validated = Revision.NEVER;
+    this.recordChange();
+  }
+
+  /** Registers that the value has changed without invalidating it */
+  recordChange() {
     Reactor.currentReactor.recordChange(this);
   }
 

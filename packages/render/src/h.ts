@@ -2,9 +2,8 @@ import {
   VNode,
   Attributes,
   ComponentFactory,
-  ComponentChild,
-  ComponentChildren,
-  isVNode
+  RenderCommand,
+  Children
 } from "./types";
 
 type ComponentParams<P> = Attributes & P;
@@ -12,27 +11,8 @@ type SimpleParams = JSX.HTMLAttributes &
   JSX.SVGAttributes &
   Record<string, any>;
 
-interface h {
-  <P>(
-    node: ComponentFactory<P>,
-    params?: ComponentParams<P> | null,
-    ...children: (ComponentChild | ComponentChildren)[]
-  ): VNode;
-  (
-    node: string,
-    params?: SimpleParams | null,
-    ...children: (ComponentChild | ComponentChildren)[]
-  ): VNode;
-
-  /**
-   * Attempts to reuse any of the structures from a prior VNode instance
-   * so that you can easily diff using strict compare.
-   */
-  reuse(next: ComponentChild, prior: ComponentChild): ComponentChild;
-}
-
-const NO_CHILDREN: ComponentChild[] = [];
-const stack: (ComponentChild | ComponentChildren)[] = [];
+const NO_CHILDREN: RenderCommand[] = [];
+const stack: (RenderCommand | Children)[] = [];
 
 /**
  * A metal-friendly JSX/hyperscript reviver.
@@ -40,13 +20,23 @@ const stack: (ComponentChild | ComponentChildren)[] = [];
  * This will keep a cache of previously returned VNodes, and attempt to return
  * the same instance
  */
-const h = (<P>(
-  nodeName: ComponentFactory<P> | string,
+function h<P>(
+  node: ComponentFactory<P>,
+  params?: ComponentParams<P> | null,
+  ...children: (RenderCommand | Children)[]
+): VNode;
+function h(
+  node: string,
+  params?: SimpleParams | null,
+  ...children: (RenderCommand | Children)[]
+): VNode;
+function h<P>(
+  type: ComponentFactory<P> | string,
   params: ComponentParams<P> | SimpleParams | null,
-  ...rest: (ComponentChild | ComponentChildren)[]
-) => {
+  ...rest: (RenderCommand | Children)[]
+): VNode {
   // flatten children and merge simple strings when possible
-  const maybeSimple = "function" !== typeof nodeName;
+  const maybeSimple = "function" !== typeof type;
 
   for (let idx = rest.length; idx--; idx >= 0) stack.push(rest[idx]);
   if (params && params.children) {
@@ -80,84 +70,13 @@ const h = (<P>(
   }
 
   const node: VNode = {
-    nodeName,
+    type,
     attributes: params,
     children,
     key: params.key
   };
-}) as h;
 
-const reuseAttributes = (next: Object, prior: Object) => {
-  if (next === prior || !next || !prior) return next;
-  const priorKeys = new Set(Object.keys(prior));
-  for (const key in next) {
-    if (!next.hasOwnProperty(key)) continue;
-    if (!priorKeys.has(key)) return next;
-    if (next[key] !== prior[key]) return next;
-    priorKeys.delete(key);
-  }
-  return priorKeys.size === 0 ? prior : next;
-};
-
-const matchesPriorNode = (
-  newNode: VNode,
-  priorNode: VNode,
-  children: ComponentChildren,
-  attributes: Object
-) =>
-  newNode.nodeName === priorNode.nodeName &&
-  newNode.key === priorNode.key &&
-  children === priorNode.children &&
-  attributes === priorNode.attributes;
-
-const matchesNewNode = (
-  newNode: VNode,
-  children: ComponentChildren,
-  attributes: Object
-) => children === newNode.children && attributes === newNode.attributes;
-
-const reuseNode = (next: ComponentChild, prior: ComponentChild) => {
-  if (next === prior || !next || !prior || !isVNode(next) || !isVNode(prior))
-    return next;
-  const children = reuseChildren(next.children, prior.children);
-  const attributes = reuseAttributes(next.attributes, prior.attributes);
-  return matchesPriorNode(next, prior, children, attributes)
-    ? prior
-    : matchesNewNode(next, children, attributes)
-      ? next
-      : {
-          nodeName: next.nodeName,
-          attributes,
-          children,
-          key: next.key
-        };
-};
-
-const reuseChildren = (next: ComponentChildren, prior: ComponentChildren) => {
-  let ret: ComponentChildren = null;
-  if (next === prior || !next || !prior || next.length !== prior.length)
-    return next;
-  let reused = 0;
-  for (let idx = next.length; idx--; idx >= 0) {
-    const nchild = next[idx];
-    const pchild = prior[idx];
-    const child =
-      "object" === typeof nchild && "object" === typeof pchild
-        ? reuseNode(nchild, pchild)
-        : nchild;
-    if (child === pchild) {
-      reused++;
-      if (child !== nchild) {
-        if (!ret) ret = next.slice();
-        ret[idx] = child;
-      }
-    }
-  }
-  if (reused === prior.length) ret = prior;
-  else if (!ret) ret = next;
-  return ret;
-};
-
-h.reuse = reuseNode;
+  return node;
+}
 
 export default h;

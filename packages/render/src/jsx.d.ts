@@ -1,15 +1,15 @@
 import {
-  VNode,
-  TrackedComponent,
-  MultiDOMAttributes,
+  RenderCommand,
+  RenderableComponent,
+  PlasticDOMAttributes,
   ClassAttributes
 } from "./types";
 
 declare global {
   namespace JSX {
-    interface Element extends VNode {}
+    type Element = RenderCommand;
 
-    interface ElementClass extends TrackedComponent {}
+    interface ElementClass extends RenderableComponent {}
 
     interface ElementAttributesProperty {
       props: any;
@@ -296,7 +296,7 @@ declare global {
     type GenericEventHandler = EventHandler<Event>;
     type PointerEventHandler = EventHandler<PointerEvent>;
 
-    interface DOMAttributes extends MultiDOMAttributes {
+    interface DOMAttributes extends PlasticDOMAttributes {
       // Image Events
       onLoad?: GenericEventHandler;
       onLoadCapture?: GenericEventHandler;

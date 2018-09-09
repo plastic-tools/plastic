@@ -1,0 +1,8 @@
+{
+  "name": "@plastic/demos",
+  "version": "1.0.0",
+  "dependencies": {
+    "@plastic/reactor": "1.0.0",
+    "@plastic/render": "1.0.0"
+  }
+}

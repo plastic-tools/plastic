@@ -15,3 +15,4 @@ export { default as tracked } from "./src/tracked";
 export { default as TrackedArray } from "./src/tracked-array";
 export { default as TrackedMap } from "./src/tracked-map";
 export { default as TrackedSet } from "./src/tracked-set";
+export { default as reuse } from "./src/reuse";
