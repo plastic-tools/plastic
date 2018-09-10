@@ -1,12 +1,6 @@
-import { RenderCommand, isVNode } from "./types";
 import Renderer from "./renderer";
-import h from "./h";
 import { Zone } from "@plastic/runtime";
-
-const isBodyVNode = (input: RenderCommand) =>
-  isVNode(input) &&
-  "string" === typeof input.type &&
-  input.type.toLowerCase() === "body";
+import { RenderCommand } from "./types";
 
 /**
  * Renders the root, optionally using the passed root node as the element

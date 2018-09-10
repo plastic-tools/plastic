@@ -6,16 +6,21 @@ import {
   Reactor
 } from "@plastic/reactor";
 import {
-  Key,
   RenderCommand,
-  isVNode,
-  isComponentConstructor,
-  RenderableProps,
-  RenderableComponent,
+  StaticRenderCommand,
+  isRenderNode,
   Context,
+  ComponentDataSource,
+  isRenderComponentNode,
+  Props,
+  RenderComponent,
+  isComponentConstructor,
   isFunctionalComponent,
-  VNode,
-  StaticRenderCommand
+  isRenderDOMNode,
+  Key,
+  RenderDOMNode,
+  RenderText,
+  isRenderText
 } from "./types";
 import {
   nodeNamesAreEqual,
@@ -24,7 +29,7 @@ import {
   createText,
   nodeIsNamed,
   setAttribute
-} from "./dom";
+} from "@plastic/render/src/dom/dom";
 import { Zone } from "@plastic/runtime";
 
 const $Renderer = Symbol();
@@ -35,15 +40,19 @@ const $Renderer = Symbol();
  * renderer is registered, the DOM will update automatically when any of
  * the UI content changes.
  */
-export default class Renderer implements Reactable {
+export default class Renderer implements Reactable, ComponentDataSource {
   constructor(
     input: RenderCommand,
     readonly parent: Renderer = null,
-    readonly document = Zone.currentZone.ui.document
+    readonly document = parent ? parent.document : Zone.currentZone.ui.document
   ) {
     this.input = input;
   }
 
+  /**
+   * Input to the renderer. Changing this property will update the dom
+   * the next time you retrieve it.
+   */
   @tracked
   input: RenderCommand;
 
@@ -57,8 +66,8 @@ export default class Renderer implements Reactable {
   /** Key associated with this render if supplied in command */
   @tracked
   get key() {
-    const cmd = this.staticInput;
-    return isVNode(cmd) && cmd.key;
+    const input = this.staticInput;
+    return isRenderNode(input) && input.key;
   }
 
   /** Context that will be supplied to any component */
@@ -66,6 +75,55 @@ export default class Renderer implements Reactable {
   get context(): Context {
     const parent = this.parent;
     return (parent && parent.childContext) || {};
+  }
+
+  /** Props that will be supplied to any component */
+  @tracked
+  get props(): Props<any> {
+    const { staticInput } = this;
+    if (!isRenderComponentNode(staticInput)) return null;
+    const { attributes, children, key } = staticInput;
+    return { ...attributes, children, key };
+  }
+
+  /** A component instance, if input specifies it */
+  @tracked
+  get component(): RenderComponent {
+    const { staticInput } = this;
+    const Factory = isRenderComponentNode(staticInput)
+      ? staticInput.type
+      : null;
+    if (!Factory || !isComponentConstructor(Factory)) return null;
+    const prior = tracked.prior as RenderComponent;
+    return prior instanceof Factory && prior.constructor === Factory
+      ? prior
+      : new Factory(this);
+  }
+
+  /** Returns output of any component */
+  @tracked
+  get componentOutput(): RenderCommand {
+    const { component, staticInput, props, context } = this;
+    if (component) return component.output;
+    const fn = isRenderComponentNode(staticInput) && staticInput.type;
+    if (!isFunctionalComponent(fn)) return null;
+    return fn(props, context);
+  }
+
+  /** Returns a renderer for the output of the component, if there is one. */
+  get componentRenderer() {
+    const { staticInput } = this;
+    return isRenderComponentNode(staticInput)
+      ? tracked.prior
+      : new Renderer(() => this.componentOutput, this);
+  }
+
+  /** Makes this componant comparable for reuse purposes */
+  isEqual(x: any) {
+    if (x === this) return true;
+    if (!x || !(x instanceof Renderer)) return false;
+    const { parent, input } = this;
+    return x.parent == parent && reuse(x.input, input) === input;
   }
 
   /** Context that will be supplied to any chilldren that are components */
@@ -77,56 +135,6 @@ export default class Renderer implements Reactable {
       : this.context;
   }
 
-  /** Props that will be supplied to any component */
-  @tracked
-  get props(): RenderableProps<any> {
-    const input = this.staticInput;
-    if (!isVNode(input)) return null;
-    const { attributes, children, key } = input;
-    return { ...attributes, children, key };
-  }
-
-  /** A component instance, if defined by command. */
-  @tracked
-  get component(): RenderableComponent {
-    const { staticInput } = this;
-    const Factory = (isVNode(staticInput) && staticInput.type) || null;
-    if (!isComponentConstructor(Factory)) return null;
-    let ret = tracked.prior as RenderableComponent;
-    const { props, context } = this;
-    if (ret instanceof Factory && ret.constructor === Factory) {
-      ret.updateProps(props, context);
-    } else ret = new Factory(props, context);
-    return ret;
-  }
-
-  /**
-   * Returns a renderer for the output of the command in the component, if
-   * there is one.
-   */
-  get componentRenderer() {
-    const { component, staticInput, document } = this;
-    const output = component
-      ? component.output
-      : isVNode(staticInput) &&
-        isFunctionalComponent(staticInput.type) &&
-        staticInput.type(this.props, this.context);
-    if (!output) return null;
-    let ret = tracked.prior as Renderer;
-    if (ret) {
-      ret.input = reuse(output, ret.input);
-    } else ret = new Renderer(output, this, document);
-    return ret;
-  }
-
-  /** Makes this componant comparable for reuse purposes */
-  isEqual(x: any) {
-    if (x === this) return true;
-    if (!x || !(x instanceof Renderer)) return false;
-    const { parent, input } = this;
-    return x.parent == parent && reuse(x.input, input) === input;
-  }
-
   /**
    * Returns an array of renderer for any child nodes if any are defined.
    * Note that renderers with an input identifying a component will always
@@ -134,10 +142,10 @@ export default class Renderer implements Reactable {
    */
   @tracked
   protected get children(): Renderer[] {
-    const { componentRenderer, document, staticInput } = this;
-    if (componentRenderer) return [];
+    const { staticInput } = this;
+    if (!isRenderDOMNode(staticInput)) return NO_CHILDREN;
 
-    const children = isVNode(staticInput) && staticInput.children;
+    const children = staticInput.children;
     if (!children || children.length === 0) return NO_CHILDREN;
     let ret = NO_CHILDREN;
     const prior = (tracked.prior as Renderer[]) || NO_CHILDREN;
@@ -149,7 +157,7 @@ export default class Renderer implements Reactable {
       let crenderer = null;
 
       // first try to reuse keyered renders
-      const key = isVNode(cinput) && cinput.key;
+      const key = isRenderNode(cinput) && cinput.key;
       if (key) {
         if (!keyed) keyed = getKeyedRenderers(prior);
         crenderer = keyed.get(key);
@@ -162,7 +170,7 @@ export default class Renderer implements Reactable {
       }
 
       // create if needed and update input
-      if (!crenderer) crenderer = new Renderer(cinput, this, document);
+      if (!crenderer) crenderer = new Renderer(cinput, this);
       else crenderer.input = reuse(cinput, crenderer.input);
 
       if (crenderer) {
@@ -177,7 +185,7 @@ export default class Renderer implements Reactable {
   @tracked
   get isSVG(): boolean {
     const { parent, staticInput } = this;
-    const type = isVNode(staticInput) && staticInput.type;
+    const type = isRenderDOMNode(staticInput) && staticInput.type;
     if ("string" !== typeof type) return parent && parent.isSVG;
     return nodeNamesAreEqual(type, "svg")
       ? true
@@ -195,13 +203,12 @@ export default class Renderer implements Reactable {
    */
   @tracked
   get dom(): Node {
-    const { componentRenderer } = this;
+    const { componentRenderer, staticInput, _root } = this;
     if (componentRenderer) return componentRenderer.dom;
-    const { staticInput, _root } = this;
     const prior = tracked.prior || _root;
-    const ret = isVNode(staticInput)
-      ? this._renderVNode(staticInput, prior)
-      : this._renderText(staticInput, prior);
+    const ret = isRenderDOMNode(staticInput)
+      ? this.renderDOMNode(staticInput, prior)
+      : this.renderText(isRenderText(staticInput) ? staticInput : "", prior);
 
     // Release old node and swap in document if changing value
     if (ret !== prior) {
@@ -274,12 +281,9 @@ export default class Renderer implements Reactable {
     for (const child of children) child.willUnmount();
   }
 
-  private _renderVNode(vnode: Readonly<VNode>, prior: Node) {
-    if ("string" !== typeof vnode.type)
-      throw `vnode.type must be string (was: ${typeof vnode.type}`;
-
+  private renderDOMNode(input: RenderDOMNode, prior: Node) {
     // first make sure node types match
-    const nodeName = vnode.type;
+    const nodeName = input.type;
     const { isSVG, children, document } = this;
     const ret =
       prior && nodeIsNamed(prior, nodeName)
@@ -291,12 +295,12 @@ export default class Renderer implements Reactable {
     updateChildren(ret, children);
 
     // update attributes
-    updateAttributes(ret, vnode.attributes || {}, isSVG);
+    updateAttributes(ret, input.attributes || {}, isSVG);
 
     return ret;
   }
 
-  private _renderText(value: string | number, prior: Node) {
+  private renderText(value: RenderText, prior: Node) {
     const { document } = this;
     const nvalue = "number" === typeof value ? String(value) : value || "";
     if (isText(prior)) {

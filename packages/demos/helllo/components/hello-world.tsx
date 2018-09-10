@@ -1,4 +1,4 @@
-import { Component, h, RenderableProps } from "@plastic/render";
+import { Component, jsx } from "@plastic/render";
 import User from "../model/user";
 
 export interface HelloWorldProps {

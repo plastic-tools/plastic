@@ -1,10 +1,10 @@
-import { tracked, reuse } from "@plastic/reactor";
-import h from "./h";
+import { tracked } from "@plastic/reactor";
 import {
-  RenderableComponent,
+  ComponentDataSource,
   Context,
-  RenderableProps,
-  RenderCommand
+  Props,
+  RenderCommand,
+  RenderComponent
 } from "./types";
 
 /**
@@ -12,27 +12,24 @@ import {
  * that will output the DOM-structure to be rendered.
  */
 export default abstract class Component<P extends {} = {}>
-  implements RenderableComponent {
+  implements RenderComponent {
   @tracked
-  props: Readonly<RenderableProps<P>>;
-
-  @tracked
-  context: Readonly<Context>;
-
-  constructor(props: RenderableProps<P>, context?: Context) {
-    this.props = props;
-    this.context = context;
+  get props() {
+    return this.renderer.props;
   }
 
-  abstract render?(): RenderCommand;
+  @tracked
+  get context() {
+    return this.renderer.context;
+  }
+
+  constructor(readonly renderer: ComponentDataSource<P>) {}
+
+  abstract render(props?: Props<P>, context?: Context): RenderCommand;
 
   @tracked
   get output() {
-    return this.render();
-  }
-
-  updateProps(props: Readonly<RenderableProps<P>>, context: Readonly<Context>) {
-    this.props = reuse(props, this.props);
-    this.context = reuse(context, this.context);
+    const { props, context } = this;
+    return this.render(props, context);
   }
 }
