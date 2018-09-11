@@ -5,14 +5,14 @@ import {
   DOMProps,
   RenderChildren,
   Key
-} from "@plastic/render/src/types";
+} from "./types";
 
 const NO_CHILDREN: RenderChildren = [];
 const stack: (RenderCommand | RenderChildren)[] = [];
 
 interface PSXAttrs {
   key?: Key;
-  children?: (RenderCommand | RenderChildren)[];
+  children?: RenderCommand | (RenderCommand | RenderChildren)[];
 }
 
 type DOMAttrs = DOMProps & { class?: string };
@@ -26,19 +26,19 @@ type DOMAttrs = DOMProps & { class?: string };
  * @param attrs attributes to pass to the element.
  * @param children any child components, may be nested
  */
-function jsx<P>(
+export function jsx<P>(
   type: ComponentFactory<P>,
   attrs?: Props<P> & PSXAttrs,
   ...children: (RenderCommand | RenderChildren)[]
 ): RenderCommand;
 
-function jsx(
+export function jsx(
   type: string,
   attrs?: DOMAttrs & PSXAttrs,
   ...children: (RenderCommand | RenderChildren)[]
 ): RenderCommand;
 
-function jsx<P>(
+export function jsx<P>(
   type: ComponentFactory<P> | string,
   attrs: (Props<P> | DOMAttrs) & PSXAttrs,
   ...rest: (RenderCommand | RenderChildren)[]

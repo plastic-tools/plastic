@@ -122,5 +122,5 @@ export interface RenderDOMNode {
 export const isRenderDOMNode = (x: any): x is RenderDOMNode =>
   isRenderNode(x) && "string" === typeof x.type;
 
-import { AnyDOMAttributes } from "./dom/types";
+import { AnyDOMAttributes } from "./src/dom/types";
 import Component from "./component";

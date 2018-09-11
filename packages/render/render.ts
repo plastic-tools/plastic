@@ -1,6 +1,7 @@
 import Renderer from "./renderer";
-import { Zone } from "@plastic/runtime";
 import { RenderCommand } from "./types";
+
+const globalDocument = document;
 
 /**
  * Renders the root, optionally using the passed root node as the element
@@ -12,8 +13,8 @@ import { RenderCommand } from "./types";
  */
 export const render = (
   fn: () => RenderCommand,
-  root: Node = Zone.currentZone.ui.root,
-  document = root && root.ownerDocument
+  root: Node = globalDocument && globalDocument.body,
+  document = (root && root.ownerDocument) || globalDocument
 ) => {
   const renderer = new Renderer(fn, null, document);
   renderer.register(root);

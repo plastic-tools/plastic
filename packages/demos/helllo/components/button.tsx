@@ -5,6 +5,10 @@ export type ButtonProps = HTMLAttributes & {
   disabled?: boolean;
 };
 
+export interface ButtonEvents {
+  onTap(sender: Button, event: Event): boolean | void;
+}
+
 export default class Button extends Component<ButtonProps> {
   render(props: Props<ButtonProps>) {
     const { title, disabled, children, ...attrs } = props;

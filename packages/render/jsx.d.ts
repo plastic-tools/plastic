@@ -5,8 +5,8 @@ import {
   Key,
   Ref,
   DangerouslySetInnerHTML
-} from "./src/types";
-import * as DOM from "./src/dom/types";
+} from "./types";
+import * as DOM from "./dom";
 
 // Hook types into JSX.
 // https://www.typescriptlang.org/docs/handbook/jsx.html
@@ -37,9 +37,13 @@ declare global {
       ref?: Ref<T>;
     }
 
+    // Allow arbitrary nesting of attributes
+    type Child = RenderCommand | Children;
+    interface Children extends Array<Child> {}
+
     /** Attributes supported by the `jsx()` helper */
     interface PlasticAttributes {
-      children?: RenderCommand | RenderCommand[];
+      children?: Child;
       class?: string;
       dangerouslySetInnerHTML?: DangerouslySetInnerHTML;
       ref?: Ref<any>;

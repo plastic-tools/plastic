@@ -1,4 +1,4 @@
-import { Ref } from "@plastic/render/src/types";
+import { Ref } from "../types";
 
 /**
  * @module dom

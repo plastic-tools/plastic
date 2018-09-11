@@ -1,5 +1,3 @@
-import { RenderCommand, DangerouslySetInnerHTML } from "@plastic/render/src/types";
-
 export interface EventHandler<E extends Event> {
   (event: E): void;
 }

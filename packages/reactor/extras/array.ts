@@ -1,10 +1,9 @@
-import { TrackedValue, Revision } from "./types";
-import Reactor from "./reactor";
+import { TrackedValue, Revision, reactor } from "@plastic/reactor";
 
 const handler: ProxyHandler<any[]> = {
   get(target: any[], key: string, receiver: TrackedArray<any>) {
     if (key === "length" || !(key in Array.prototype)) {
-      Reactor.currentReactor.recordAccess(receiver);
+      reactor.recordAccess(receiver);
     }
     return Reflect.get(target, key, receiver);
   },
@@ -29,12 +28,12 @@ export default class TrackedArray<T> extends Proxy<T[]>
     super(array, handler);
   }
 
-  validate(_, rev = Reactor.currentReactor.changed) {
-    return rev >= this._changed;
+  validate(flushed: Revision) {
+    return this._changed <= flushed;
   }
 
   recordChange() {
-    this._changed = Reactor.currentReactor.recordChange(this);
+    this._changed = reactor.recordChange(this);
   }
 
   private _changed = Revision.NEVER;

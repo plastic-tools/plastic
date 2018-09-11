@@ -1,84 +1,94 @@
-import {
-  tracked,
-  reuse,
-  Reactable,
-  TrackedValue,
-  Reactor
-} from "@plastic/reactor";
+import { track, $Reuse, reuse, reactor } from "@plastic/reactor";
 import {
   RenderCommand,
   StaticRenderCommand,
   isRenderNode,
   Context,
-  ComponentDataSource,
-  isRenderComponentNode,
   Props,
+  isRenderComponentNode,
   RenderComponent,
   isComponentConstructor,
   isFunctionalComponent,
   isRenderDOMNode,
   Key,
+  isRenderText,
   RenderDOMNode,
-  RenderText,
-  isRenderText
+  RenderText
 } from "./types";
 import {
   nodeNamesAreEqual,
+  nodeIsNamed,
   createNode,
   isText,
   createText,
-  nodeIsNamed,
   setAttribute
-} from "@plastic/render/src/dom/dom";
-import { Zone } from "@plastic/runtime";
+} from "./dom";
 
-const $Renderer = Symbol();
+const globalDocument = document;
 
 /**
- * A Reaction that accepts a VNode and root element as input and renders
- * a DOM to it, creating associated components as needed. As long as the
- * renderer is registered, the DOM will update automatically when any of
- * the UI content changes.
+ * Renders a RenderCommand into a dom node that can be inserted into a tree.
+ * @todo more docs
  */
-export default class Renderer implements Reactable, ComponentDataSource {
+export class Renderer {
   constructor(
     input: RenderCommand,
     readonly parent: Renderer = null,
-    readonly document = parent ? parent.document : Zone.currentZone.ui.document
+    readonly document = parent ? parent.document : globalDocument
   ) {
-    this.input = input;
+    if (input) this.input = input;
   }
 
   /**
-   * Input to the renderer. Changing this property will update the dom
-   * the next time you retrieve it.
+   * Input to the renderer. Changing this property will eventually update
+   * the dom.
    */
-  @tracked
+  @track
   input: RenderCommand;
 
-  /** The input with any render command functions processed away */
-  protected get staticInput(): StaticRenderCommand {
+  /** input render command with functions processed away */
+  @track
+  get staticInput(): StaticRenderCommand {
     let { input } = this;
     while ("function" === typeof input) input = input();
     return input;
   }
 
-  /** Key associated with this render if supplied in command */
-  @tracked
+  /** Renderer key, if supplied in command */
+  @track
   get key() {
-    const input = this.staticInput;
-    return isRenderNode(input) && input.key;
+    const { staticInput } = this;
+    return isRenderNode(staticInput) ? staticInput.key : null;
   }
 
+  /** Accelerate reuse() */
+  [$Reuse](prior: Renderer) {
+    const { parent, input } = this;
+    return prior.parent === parent && reuse(prior.input, input) === input;
+  }
+
+  // ..........................
+  // COMPONENT PROPERTIES
+  //
+
   /** Context that will be supplied to any component */
-  @tracked
+  @track
   get context(): Context {
     const parent = this.parent;
     return (parent && parent.childContext) || {};
   }
 
+  /** Context that will be supplied to any chilldren that are components */
+  @track
+  get childContext(): Context {
+    const component = this.component;
+    return component
+      ? { ...this.context, ...component.childContext }
+      : this.context;
+  }
+
   /** Props that will be supplied to any component */
-  @tracked
+  @track
   get props(): Props<any> {
     const { staticInput } = this;
     if (!isRenderComponentNode(staticInput)) return null;
@@ -87,21 +97,21 @@ export default class Renderer implements Reactable, ComponentDataSource {
   }
 
   /** A component instance, if input specifies it */
-  @tracked
+  @track
   get component(): RenderComponent {
     const { staticInput } = this;
     const Factory = isRenderComponentNode(staticInput)
       ? staticInput.type
       : null;
     if (!Factory || !isComponentConstructor(Factory)) return null;
-    const prior = tracked.prior as RenderComponent;
+    const prior = track.prior as RenderComponent;
     return prior instanceof Factory && prior.constructor === Factory
       ? prior
       : new Factory(this);
   }
 
   /** Returns output of any component */
-  @tracked
+  @track
   get componentOutput(): RenderCommand {
     const { component, staticInput, props, context } = this;
     if (component) return component.output;
@@ -114,25 +124,8 @@ export default class Renderer implements Reactable, ComponentDataSource {
   get componentRenderer() {
     const { staticInput } = this;
     return isRenderComponentNode(staticInput)
-      ? tracked.prior
+      ? track.prior
       : new Renderer(() => this.componentOutput, this);
-  }
-
-  /** Makes this componant comparable for reuse purposes */
-  isEqual(x: any) {
-    if (x === this) return true;
-    if (!x || !(x instanceof Renderer)) return false;
-    const { parent, input } = this;
-    return x.parent == parent && reuse(x.input, input) === input;
-  }
-
-  /** Context that will be supplied to any chilldren that are components */
-  @tracked
-  get childContext(): Context {
-    const component = this.component;
-    return component
-      ? { ...this.context, ...component.childContext }
-      : this.context;
   }
 
   /**
@@ -140,7 +133,7 @@ export default class Renderer implements Reactable, ComponentDataSource {
    * Note that renderers with an input identifying a component will always
    * have an empty array.
    */
-  @tracked
+  @track
   protected get children(): Renderer[] {
     const { staticInput } = this;
     if (!isRenderDOMNode(staticInput)) return NO_CHILDREN;
@@ -148,7 +141,7 @@ export default class Renderer implements Reactable, ComponentDataSource {
     const children = staticInput.children;
     if (!children || children.length === 0) return NO_CHILDREN;
     let ret = NO_CHILDREN;
-    const prior = (tracked.prior as Renderer[]) || NO_CHILDREN;
+    const prior = (track.prior as Renderer[]) || NO_CHILDREN;
     const plim = prior.length;
     let keyed: Map<Key, Renderer> = null;
     let pidx = 0;
@@ -182,7 +175,7 @@ export default class Renderer implements Reactable, ComponentDataSource {
   }
 
   /** Returns true if the receiver should render in SVG mode */
-  @tracked
+  @track
   get isSVG(): boolean {
     const { parent, staticInput } = this;
     const type = isRenderDOMNode(staticInput) && staticInput.type;
@@ -201,11 +194,11 @@ export default class Renderer implements Reactable, ComponentDataSource {
    * However, it is the responsibility of the parent to insert the node into
    * the document in the first place.
    */
-  @tracked
+  @track
   get dom(): Node {
     const { componentRenderer, staticInput, _root } = this;
     if (componentRenderer) return componentRenderer.dom;
-    const prior = tracked.prior || _root;
+    const prior = track.prior || _root;
     const ret = isRenderDOMNode(staticInput)
       ? this.renderDOMNode(staticInput, prior)
       : this.renderText(isRenderText(staticInput) ? staticInput : "", prior);
@@ -220,27 +213,18 @@ export default class Renderer implements Reactable, ComponentDataSource {
     return ret;
   }
 
-  private _root: Node;
+  private refresh = () => {
+    this.dom;
+  };
 
-  revalidateReaction(changes?: Set<TrackedValue>) {
-    return this.dom === this._root;
-  }
-
-  invokeReaction() {
-    const { dom, _root } = this;
-    if (dom === _root) return;
-    if (_root.parentNode) _root.parentNode.replaceChild(dom, _root);
-    this._root = dom;
-  }
-
-  register(root: Node = null, reactor = Reactor.currentReactor) {
+  register(root: Node = null) {
     this._root = root;
-    reactor.register(this);
+    reactor.register(this.refresh);
   }
 
-  unregister(reactor = Reactor.currentReactor) {
+  unregister() {
     this._root = null;
-    reactor.unregister(this);
+    reactor.unregister(this.refresh);
   }
 
   /**
@@ -308,9 +292,18 @@ export default class Renderer implements Reactable, ComponentDataSource {
       return prior;
     } else return createText(nvalue, document);
   }
+
+  private _root: Node;
 }
 
+// ..........................
+// HELPERS
+//
+
+const $Renderer = Symbol();
+
 const NO_CHILDREN: Renderer[] = [];
+
 const getKeyedRenderers = (prior: Renderer[]) => {
   const ret = new Map<Key, Renderer>();
   for (const renderer of prior) {
@@ -386,3 +379,5 @@ const updateChildren = (node: Node, children: Renderer[]) => {
     node.removeChild(priorNode.nextSibling);
   }
 };
+
+export default Renderer;
