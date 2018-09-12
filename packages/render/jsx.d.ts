@@ -1,10 +1,10 @@
 import {
-  RenderCommand,
   RenderComponent,
   RenderChildren,
   Key,
   Ref,
-  DangerouslySetInnerHTML
+  DangerouslySetInnerHTML,
+  RendererInput
 } from "./types";
 import * as DOM from "./dom";
 
@@ -13,11 +13,11 @@ import * as DOM from "./dom";
 declare global {
   namespace jsx.JSX {
     // Return value of psx
-    type Element = RenderCommand;
+    type Element = RendererInput;
 
     // Detect a class component by constructor returning this property
     interface ElementClass {
-      output: RenderCommand;
+      output: RendererInput;
     }
 
     // Detect allowed props on class component
@@ -38,7 +38,7 @@ declare global {
     }
 
     // Allow arbitrary nesting of attributes
-    type Child = RenderCommand | Children;
+    type Child = RendererInput | Children;
     interface Children extends Array<Child> {}
 
     /** Attributes supported by the `jsx()` helper */

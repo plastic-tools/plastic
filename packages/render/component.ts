@@ -1,11 +1,16 @@
-import { RenderComponent, ComponentDataSource, RendererInput } from "./types";
+import {
+  RenderComponent,
+  ComponentDataSource,
+  RendererInput,
+  Props
+} from "./types";
 import { cache } from "@plastic/reactor";
 
 export abstract class Component<P = {}> implements RenderComponent {
   constructor(readonly owner: ComponentDataSource) {}
 
-  get props() {
-    return this.owner.props;
+  get props(): Props<P> {
+    return this.owner.props as Props<P>;
   }
 
   get context() {
