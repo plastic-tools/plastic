@@ -1,35 +1,22 @@
-import { track } from "@plastic/reactor";
-import {
-  ComponentDataSource,
-  Context,
-  Props,
-  RenderCommand,
-  RenderComponent
-} from "./types";
+import { RenderComponent, ComponentDataSource, RendererInput } from "./types";
+import { cache } from "@plastic/reactor";
 
-/**
- * A Component works similar to a React component. It has a computed property
- * that will output the DOM-structure to be rendered.
- */
-export abstract class Component<P extends {} = {}> implements RenderComponent {
-  @track
+export abstract class Component<P = {}> implements RenderComponent {
+  constructor(readonly owner: ComponentDataSource) {}
+
   get props() {
-    return this.renderer.props;
+    return this.owner.props;
   }
 
-  @track
   get context() {
-    return this.renderer.context;
+    return this.owner.context;
   }
 
-  constructor(readonly renderer: ComponentDataSource<P>) {}
+  abstract render(): RendererInput;
 
-  abstract render(props?: Props<P>, context?: Context): RenderCommand;
-
-  @track
+  @cache
   get output() {
-    const { props, context } = this;
-    return this.render(props, context);
+    return this.render();
   }
 }
 

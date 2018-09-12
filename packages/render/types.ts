@@ -2,51 +2,70 @@ export type Key = string | number;
 export type Context<P = {}> = Readonly<P>;
 export type Ref<T> = (instance: T) => void;
 
+export interface DangerouslySetInnerHTML {
+  __html: string;
+}
+
+export interface Poolable {
+  /** Resets the state of the object */
+  poolReset?();
+}
+
+/** Core renderer, swapped in based on node type */
+export interface Engine<N = any> extends Poolable {
+  owner: Renderer;
+  readonly node: N;
+  readonly childContext?: Context;
+  willMount();
+  didMount();
+  willUnmount();
+}
+
 // ................................
 // RenderCommand
 //
 
-/**
- * A single instruction to a renderer on how it should generate UI. In
- * general one renderer instance will be created for each command.
- */
-export type RenderCommand = RenderText | RenderNode | RenderFunction | null;
-export type StaticRenderCommand = RenderText | RenderNode | null;
+export type RendererInput = RenderCommand | RenderFunction;
+export type RenderFunction = () => RendererInput;
+export type RenderCommand = PlatformCommand | ComponentCommand | null;
+export type RenderChildren = RendererInput[];
 
-export type RenderText = string | number;
-export type RenderNode = RenderComponentNode | RenderDOMNode;
-export type RenderFunction = () => RenderCommand;
-export type RenderChildren = RenderCommand[];
+export interface NodeCommand {
+  type: string;
+  attributes: {};
+  children: RenderChildren;
+  key?: Key;
+}
+export const isNodeCommand = (x: RenderCommand): x is NodeCommand =>
+  !!x && "object" === typeof x && "string" === typeof x.type;
 
-export const isRenderNode = (x: RenderCommand): x is RenderNode =>
-  !!x && "object" === x;
-export const isRenderFunction = (x: RenderCommand): x is RenderFunction =>
-  !!x && "function" === typeof x;
-export const isRenderText = (x: RenderCommand): x is RenderText =>
+export type TextCommand = string | number;
+export const isTextCommand = (x: RenderCommand): x is TextCommand =>
   "string" === typeof x || "number" === typeof x;
 
-/** Common attributes supported by all render command */
-interface RenderNodeAttributes<RefType = any> {
-  children?: RenderChildren;
+export type PlatformCommand = NodeCommand | TextCommand;
+export const isPlatformCommand = (x: RenderCommand): x is PlatformCommand =>
+  isNodeCommand(x) || isTextCommand(x);
+
+export interface ComponentCommand<P = {}> {
+  type: ComponentFactory<P>;
+  attributes: P;
+  children: RenderChildren;
   key?: Key;
-  ref?: Ref<RefType>;
 }
+export const isComponentCommand = (x: RenderCommand): x is ComponentCommand =>
+  !!x && "object" === typeof x && "function" === typeof x;
 
 // ................................
 // Components
 //
 
-/** Renders a component with the specified properties */
-export interface RenderComponentNode<P = {}> {
-  type: ComponentConstructor<P> | FunctionalComponent<P>;
-  attributes: Props<P>;
-  children?: RenderCommand[];
+export interface PropAttributes<RefType = any> {
+  children?: RenderChildren[];
   key?: Key;
+  ref?: Ref<RefType>;
 }
-export const isRenderComponentNode = (x: any): x is RenderComponentNode =>
-  isRenderNode(x) && "function" === typeof x.type;
-
-export type Props<P, R = any> = Readonly<P & RenderNodeAttributes<R>>;
+export type Props<P, R = any> = Readonly<P & PropAttributes<R>>;
 
 export interface ComponentDataSource<P = {}> {
   readonly props: Props<P>;
@@ -57,7 +76,7 @@ export interface RenderComponent<P = {}> {
    * The render command computed by this component. Make sure this property
    * is tracked if it is not constant.
    */
-  readonly output: RenderCommand;
+  readonly output: RendererInput;
 
   /**
    * Any context values you want to supply to children. Will be merged with
@@ -92,7 +111,7 @@ export const isComponentConstructor = (x: any): x is ComponentConstructor =>
   "function" === typeof x && isRenderComponent(x.prototype);
 
 export interface FunctionalComponent<P = {}> {
-  (props: Props<P>, context?: Context): RenderCommand;
+  (props: Props<P>, context?: Context): RendererInput;
   displayName?: string;
   defaultProps?: Partial<P>;
 }
@@ -104,23 +123,35 @@ export type ComponentFactory<P = {}> =
   | FunctionalComponent<P>;
 
 // ................................
-// DOM Rendering
+// Responder
 //
 
-export interface DangerouslySetInnerHTML {
-  __html: string;
+export interface ResponderLike {
+  /**
+   * Attempts to perform the named action by invoking a similarly named
+   * method on the receiver. The default implementation
+   */
+  performAction(actionName: string, sender: Object, ...args: any[]): boolean;
+
+  /**
+   * If implemented, should be called by performAction() if it cannot find a
+   * local method to call. Should look for any follow on responder to call
+   * instead.
+   *
+   * @param actionName
+   * @param sender
+   * @param args
+   */
+  forwardAction?(actionName: string, sender: Object, ...args: any[]): boolean;
+
+  /**
+   * If implemented, should point to the next responder to forward events
+   * to.
+   */
+  nextResponder?: ResponderLike;
 }
-export type DOMProps = RenderNodeAttributes & AnyDOMAttributes;
+export const isResponderLike = (x: any) =>
+  !!x && "object" === typeof x && "function" === typeof x.performAction;
 
-export interface RenderDOMNode {
-  type: string;
-  attributes: DOMProps;
-  children?: RenderCommand[];
-  key?: Key;
-}
-
-export const isRenderDOMNode = (x: any): x is RenderDOMNode =>
-  isRenderNode(x) && "string" === typeof x.type;
-
-import { AnyDOMAttributes } from "./src/dom/types";
-import Component from "./component";
+import Component from "@plastic/render/component.engine";
+import Renderer from "./renderer";

@@ -10,8 +10,8 @@ export interface ButtonEvents {
 }
 
 export default class Button extends Component<ButtonProps> {
-  render(props: Props<ButtonProps>) {
-    const { title, disabled, children, ...attrs } = props;
+  render() {
+    const { title, disabled, children, ...attrs } = this.props;
     return (
       <button disabled={disabled} {...attrs}>
         {children && children.length > 0 ? children : title}

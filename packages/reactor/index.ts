@@ -9,3 +9,4 @@
 export * from "./reactor";
 export * from "./track";
 export * from "./reuse";
+export * from "./cache";

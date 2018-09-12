@@ -1,4 +1,4 @@
-import { Ref } from "../types";
+import { Ref } from "@plastic/render/types";
 
 /**
  * @module dom
@@ -7,43 +7,11 @@ import { Ref } from "../types";
  */
 
 const XLINK_URI = "http://www.w3.org/1999/xlink";
-const SVG_URI = "http://www.w3.org/2000/svg";
 /** DOM properties that should NOT have "px" added when numeric */
 const IS_NON_DIMENSIONAL = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i;
 const IS_EVENT = /^on/;
 const CAPTURE_REGEX = /Capture$/;
 const XLINK_REGEX = /^xlink:?/;
-
-export const isText = (x: any): x is Text =>
-  !!x &&
-  "object" === typeof x &&
-  "function" === typeof x.splitText &&
-  "parentNode" in x;
-
-export const createText = (text: string, document: Document) =>
-  document.createTextNode(text);
-
-const $NodeName = Symbol();
-export const createNode = (
-  nodeName: string,
-  svg = false,
-  document: Document
-) => {
-  const ret = svg
-    ? document.createElementNS(SVG_URI, nodeName)
-    : document.createElement(nodeName);
-  ret[$NodeName] = nodeName.toLowerCase();
-  return ret;
-};
-
-export const nodeNamesAreEqual = (name1: any, name2: any) =>
-  name1 === name2 ||
-  ("string" === typeof name1 &&
-    "string" === typeof name2 &&
-    name1.toLowerCase() === name2.toLowerCase());
-
-export const nodeIsNamed = (node: Node, nodeName: string) =>
-  node && nodeNamesAreEqual(node[$NodeName] || node.nodeName, nodeName);
 
 export const applyRef = (ref: Ref<any>, node: Node) => {};
 
@@ -118,3 +86,5 @@ export const setAttribute = (
 function eventProxy(e: Event) {
   return this._listeners[e.type](e);
 }
+
+export default setAttribute;
