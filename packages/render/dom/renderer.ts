@@ -23,6 +23,26 @@ export class DOMRenderer implements Renderer<Node> {
     return this.owner.command as PlatformCommand;
   }
 
+  get parentSVG(): boolean {
+    let parent = this.owner.parent;
+    while (parent) {
+      if ("svg" in parent.renderer) return (parent.renderer as DOMRenderer).svg;
+      parent = parent.parent;
+    }
+    return false;
+  }
+
+  get svg(): boolean {
+    const { command, owner } = this;
+    return isNodeCommand(command)
+      ? command.type === "svg"
+        ? true
+        : command.type === "foreignObject"
+          ? false
+          : this.parentSVG
+      : this.parentSVG;
+  }
+
   /**
    * Returns an array of renderers for any child nodes if any are defined.
    * Note that renderers with an input identifying a component will always
@@ -77,7 +97,7 @@ export class DOMRenderer implements Renderer<Node> {
     const { command, owner } = this;
     const prior = cache.prior || owner.root;
     const ret = isNodeCommand(command)
-      ? this.renderNode(command, prior, false)
+      ? this.renderNode(command, prior, this.svg)
       : isTextCommand(command)
         ? this.renderText(command, prior)
         : null;
