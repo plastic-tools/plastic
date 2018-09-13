@@ -1,4 +1,5 @@
 import reuse from "./reuse";
+import { defer } from "@plastic/runtime";
 
 export type PropertyKey = string | symbol;
 
@@ -229,17 +230,16 @@ export class Reactor {
    * need to call it yourself.
    */
   flush() {
-    if (!this.scheduledFlush)
-      this.scheduledFlush = Promise.resolve().then(this.flushIfNeeded);
+    defer(this.flushNow);
   }
 
   /**
    * Immediately flushes any changes. Except for testing, you shouldn't call
    * this method yourself.
    */
-  flushNow() {
+  flushNow = () => {
     const { dependents } = this;
-    this.scheduledFlush = null;
+    defer.cancel(this.flushNow); // in case called outside of deferral
     let changes: Set<TrackedValue>;
     const active = this.getReactionDependencies();
     while ((changes = this.changes)) {
@@ -255,17 +255,11 @@ export class Reactor {
       }
     }
     this.flushed = this.current;
-  }
+  };
 
   // ....................................
   // INTERNALS
   //
-
-  private flushIfNeeded = () => {
-    if (this.scheduledFlush) this.flushNow();
-  };
-
-  private scheduledFlush: Promise<void>;
 
   private getReactionDependencies() {
     let { reactionDependencies, reactions } = this;

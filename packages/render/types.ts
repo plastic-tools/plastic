@@ -1,6 +1,6 @@
 export type Key = string | number;
 export type Context<P = {}> = Readonly<P>;
-export type Ref<T> = (instance: T) => void;
+export type Ref<T> = (instance: T) => void | { target: Object; key: string };
 
 export interface DangerouslySetInnerHTML {
   __html: string;

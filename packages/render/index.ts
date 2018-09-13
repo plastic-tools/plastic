@@ -5,3 +5,4 @@ export * from "./jsx";
 export * from "./dom/types";
 export * from "./node";
 export * from "./component";
+export * from "./ref";

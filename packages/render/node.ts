@@ -10,6 +10,7 @@ import {
 } from "./types";
 import pool from "./pool";
 import { ComponentRenderer } from "./component";
+import { defer } from "@plastic/runtime";
 
 type RendererClass<N = any> = new () => Renderer<N>;
 
@@ -97,33 +98,61 @@ export class RenderNode<N = any> {
 
   /**
    * Called on the renderer by a parent when it's output node is about to
-   * be inserted into a document.  Notifies any children and child component
-   * as needed.
+   * be inserted into a document.  Notifies renderer immediately, which will
+   * notify children as needed.
    *
    * @param mounter the renderer mounting the this renderer.
    */
   willMount() {
     const { renderer } = this;
-    renderer && renderer.willMount();
+    if (renderer) renderer.willMount();
   }
 
   /**
    * Called just after the renderer's DOM is inserted into a document for
-   * the first time.
+   * the first time. These calls are queued and only executed once per
+   * microtask.
    */
   didMount() {
+    scheduleDidMount(this);
+  }
+
+  notifyDidMount() {
     const { renderer } = this;
-    renderer && renderer.didMount();
+    if (renderer) renderer.didMount();
   }
 
   /**
    * Called just before the renderer's DOM element is about to be removed
-   * from the document.
+   * from the document. Only called
    */
   willUnmount() {
     const { renderer } = this;
-    renderer && renderer.willUnmount();
+    unscheduleDidMount(this);
+    if (renderer) renderer.willUnmount();
   }
 }
+
+// ............................
+// HELPERS
+//
+
+let pendingDidMounts = new Set<RenderNode>();
+const flushDidMounts = () => {
+  while (pendingDidMounts.size > 0) {
+    const pending = pendingDidMounts;
+    pendingDidMounts = new Set();
+    for (const renderNode of pending) renderNode.notifyDidMount();
+  }
+};
+
+const scheduleDidMount = (renderNode: RenderNode) => {
+  pendingDidMounts.add(renderNode);
+  defer(flushDidMounts);
+};
+
+const unscheduleDidMount = (renderNode: RenderNode) => {
+  pendingDidMounts.delete(renderNode);
+};
 
 export default RenderNode;

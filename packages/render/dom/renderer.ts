@@ -9,10 +9,8 @@ import {
   isTextCommand
 } from "@plastic/render/types";
 import RenderNode from "../node";
-import setAttribute from "./setAttribute";
-
-const $Renderer = Symbol();
-const NO_CHILDREN: RenderNode[] = [];
+import setAttribute, { updateAttributes } from "@plastic/render/dom/attributes";
+import { replaceNode, isText, isNamed, createNode, createText } from "./node";
 
 /**
  * Properties and methods active when rendering a platform node
@@ -49,7 +47,7 @@ export class DOMRenderer implements Renderer<Node> {
       // first try to reuse keyered renders
       const key = cinput && "object" === typeof cinput && cinput.key;
       if (key) {
-        if (!keyed) keyed = getKeyedRenderers(prior);
+        if (!keyed) keyed = toKeyedRenderers(prior);
         crenderer = keyed.get(key);
         if (crenderer) keyed.delete(key);
       }
@@ -76,8 +74,13 @@ export class DOMRenderer implements Renderer<Node> {
    */
   @cache
   get node() {
-    const prior = cache.prior || this.owner.root;
-    const ret = this.renderCommand(prior);
+    const { command, owner } = this;
+    const prior = cache.prior || owner.root;
+    const ret = isNodeCommand(command)
+      ? this.renderNode(command, prior, false)
+      : isTextCommand(command)
+        ? this.renderText(command, prior)
+        : null;
     // Release old node and swap in document if changing value
     if (prior && ret !== prior) this.replaceNode(ret, prior);
     return ret;
@@ -105,26 +108,15 @@ export class DOMRenderer implements Renderer<Node> {
   // ..............................
   // DOM Rendering
 
-  renderCommand(prior: any) {
-    const { command } = this;
-    return isNodeCommand(command)
-      ? this.renderNode(command, prior)
-      : isTextCommand(command)
-        ? this.renderText(command, prior)
-        : null;
-  }
-
   /** Called to render a platform node. */
-  renderNode(node: NodeCommand, prior: Node) {
+  renderNode(node: NodeCommand, prior: Node, svg: boolean) {
     const { type, attributes } = node;
-    const { owner, children } = this;
+    const { children } = this;
     const ret =
-      !isText(prior) && nodeIsNamed(prior, type)
-        ? prior
-        : this.createNode(type);
-    ret[$Renderer] = owner;
-    this.updateChildren(ret, children);
-    this.updateAttributes(ret, attributes);
+      !isText(prior) && isNamed(prior, type) ? prior : createNode(type, svg);
+    ret[$RenderNode] = this;
+    updateChildren(ret, children);
+    updateAttributes(ret, attributes, svg);
     return prior;
   }
 
@@ -134,84 +126,13 @@ export class DOMRenderer implements Renderer<Node> {
     if (isText(prior)) {
       if (prior.nodeValue !== nvalue) prior.nodeValue = nvalue;
       return prior;
-    } else return this.createText(nvalue);
+    } else return createText(nvalue);
   }
 
   /** Called when a node has changed and should replace a prior node */
   replaceNode(next: Node, prior: Node) {
-    delete prior[$Renderer];
-    if (prior.parentNode) prior.parentNode.replaceChild(next, prior);
-  }
-
-  // .............................
-  // UTILITIES
-  //
-
-  // TODO: override for SVG
-  createNode(nodeName: string): Node {
-    return document.createElement(nodeName);
-  }
-
-  createText(text: string) {
-    return document.createTextNode(text);
-  }
-
-  updateChildren(node: Node, children: RenderNode[]) {
-    let priorNode: Node = null;
-    for (const child of children) {
-      const cnode = child.node;
-      if (!cnode) continue;
-      const parentChanged = cnode.parentNode !== node;
-      const moved = priorNode
-        ? cnode !== priorNode.nextSibling
-        : cnode !== node.firstChild;
-      if (parentChanged || moved) {
-        const unmounting =
-          cnode.ownerDocument && cnode.ownerDocument !== node.ownerDocument;
-        const mounting = unmounting || !cnode.ownerDocument;
-        if (unmounting) child.willUnmount();
-        if (mounting) child.willMount();
-        node.insertBefore(
-          cnode,
-          priorNode ? priorNode.nextSibling : node.firstChild
-        );
-        child.didMount();
-      }
-      priorNode = cnode;
-    }
-
-    // remove any extra nodes
-    while (priorNode.parentNode === node && priorNode.nextSibling) {
-      if (node[$Renderer]) node[$Renderer].willUnmount();
-      node.removeChild(priorNode.nextSibling);
-    }
-  }
-
-  setAttribute(node: Node, name: string, next: any, prior: any, svg = false) {
-    setAttribute(node, name, null, prior[name], svg);
-  }
-
-  updateAttributes(node: Node, next: any) {
-    const prior = getCachedAttributes(node);
-    function pvalue(name: string, node: Node, prior: {}) {
-      return name === "value" || name === "checked" ? node[name] : prior[name];
-    }
-
-    // remove attributes no longer present
-    for (const name in prior) {
-      if (isNil(next[name]) && !isNil(prior[name])) {
-        this.setAttribute(node, name, null, prior[name]);
-        delete prior[name];
-      }
-    }
-
-    // add new and updates
-    for (const name in next) {
-      if (name === "children" || name === "innerHTML") continue;
-      if (name in prior && next[name] === pvalue(name, node, prior)) continue;
-      this.setAttribute(node, name, next[name], prior[name]);
-      prior[name] = next[name];
-    }
+    delete prior[$RenderNode];
+    replaceNode(next, prior);
   }
 }
 
@@ -219,7 +140,10 @@ export class DOMRenderer implements Renderer<Node> {
 // HELPERS
 //
 
-const getKeyedRenderers = (prior: RenderNode[]) => {
+const $RenderNode = Symbol();
+const NO_CHILDREN: RenderNode[] = [];
+
+const toKeyedRenderers = (prior: RenderNode[]) => {
   const ret = new Map<Key, RenderNode>();
   for (const node of prior) {
     const key = node.key;
@@ -228,33 +152,41 @@ const getKeyedRenderers = (prior: RenderNode[]) => {
   return ret;
 };
 
-const nodeIsNamed = (node: Node, name2: string) => {
-  const name1 = node && node.nodeName;
-  return (
-    name1 === name2 ||
-    ("string" === typeof name1 &&
-      "string" === typeof name2 &&
-      name1.toLowerCase() === name2.toLowerCase())
-  );
-};
-
-const isText = (x: any): x is Text =>
-  !!x &&
-  "object" === typeof x &&
-  "function" === typeof x.splitText &&
-  "parentNode" in x;
-
-const isNil = (x: any) => x === null || x === undefined;
-
-const $CachedAttributes = Symbol();
-const getCachedAttributes = (node: Node) => {
-  let ret = node[$CachedAttributes];
-  if (!ret) {
-    ret = node[$CachedAttributes] = {};
-    const attributes = (node as Element).attributes || [];
-    for (const attr of attributes) ret[attr.name] = attr.value;
+/**
+ * Updates the children of the node to match the output of the passed
+ * set of render nodes. Invoking callbacks as appropriate on related
+ * nodes.
+ */
+const updateChildren = (node: Node, children: RenderNode[]) => {
+  let priorNode: Node = null;
+  for (const child of children) {
+    const cnode = child.node;
+    if (!cnode) continue;
+    const parentChanged = cnode.parentNode !== node;
+    const moved = priorNode
+      ? cnode !== priorNode.nextSibling
+      : cnode !== node.firstChild;
+    if (parentChanged || moved) {
+      const changingDocument =
+        cnode.ownerDocument && cnode.ownerDocument !== node.ownerDocument;
+      const mounting = changingDocument || !cnode.ownerDocument;
+      if (changingDocument) child.willUnmount();
+      if (mounting) child.willMount();
+      node.insertBefore(
+        cnode,
+        priorNode ? priorNode.nextSibling : node.firstChild
+      );
+      child.didMount();
+    }
+    priorNode = cnode;
   }
-  return ret;
+
+  // remove any extra nodes
+  while (priorNode.parentNode === node && priorNode.nextSibling) {
+    const renderNode = node[$RenderNode] as RenderNode;
+    if (renderNode) renderNode.willUnmount();
+    node.removeChild(priorNode.nextSibling);
+  }
 };
 
 export default DOMRenderer;
