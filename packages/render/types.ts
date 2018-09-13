@@ -12,8 +12,8 @@ export interface Poolable {
 }
 
 /** Core renderer, swapped in based on node type */
-export interface Engine<N = any> extends Poolable {
-  owner: Renderer;
+export interface Renderer<N = any> extends Poolable {
+  owner: RenderNode;
   readonly node: N;
   readonly childContext?: Context;
   willMount();
@@ -25,10 +25,10 @@ export interface Engine<N = any> extends Poolable {
 // RenderCommand
 //
 
-export type RendererInput = RenderCommand | RenderFunction;
-export type RenderFunction = () => RendererInput;
+export type RenderInput = RenderCommand | RenderFunction;
+export type RenderFunction = () => RenderInput;
 export type RenderCommand = PlatformCommand | ComponentCommand | null;
-export type RenderChildren = RendererInput[];
+export type RenderChildren = RenderInput[];
 
 export interface NodeCommand {
   type: string;
@@ -76,7 +76,7 @@ export interface RenderComponent<P = {}> {
    * The render command computed by this component. Make sure this property
    * is tracked if it is not constant.
    */
-  readonly output: RendererInput;
+  readonly output: RenderInput;
 
   /**
    * Any context values you want to supply to children. Will be merged with
@@ -111,7 +111,7 @@ export const isComponentConstructor = (x: any): x is ComponentConstructor =>
   "function" === typeof x && isRenderComponent(x.prototype);
 
 export interface FunctionalComponent<P = {}> {
-  (props: Props<P>, context?: Context): RendererInput;
+  (props: Props<P>, context?: Context): RenderInput;
   displayName?: string;
   defaultProps?: Partial<P>;
 }
@@ -122,36 +122,5 @@ export type ComponentFactory<P = {}> =
   | ComponentConstructor<P>
   | FunctionalComponent<P>;
 
-// ................................
-// Responder
-//
-
-export interface ResponderLike {
-  /**
-   * Attempts to perform the named action by invoking a similarly named
-   * method on the receiver. The default implementation
-   */
-  performAction(actionName: string, sender: Object, ...args: any[]): boolean;
-
-  /**
-   * If implemented, should be called by performAction() if it cannot find a
-   * local method to call. Should look for any follow on responder to call
-   * instead.
-   *
-   * @param actionName
-   * @param sender
-   * @param args
-   */
-  forwardAction?(actionName: string, sender: Object, ...args: any[]): boolean;
-
-  /**
-   * If implemented, should point to the next responder to forward events
-   * to.
-   */
-  nextResponder?: ResponderLike;
-}
-export const isResponderLike = (x: any) =>
-  !!x && "object" === typeof x && "function" === typeof x.performAction;
-
-import Component from "@plastic/render/component.engine";
-import Renderer from "./renderer";
+import Component from "./component/component";
+import RenderNode from "./node";

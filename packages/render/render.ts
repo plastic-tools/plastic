@@ -1,4 +1,5 @@
-import Renderer from "./renderer";
+import RenderNode from "./node";
+import { DOMRenderer } from "./dom";
 import { RenderCommand } from "./types";
 
 /**
@@ -13,8 +14,8 @@ export const render = (
   fn: () => RenderCommand,
   root: Node = document && document.body
 ) => {
-  const renderer = new Renderer(fn, null);
-  renderer.register(root);
+  const renderer = new RenderNode(fn, null, DOMRenderer, root);
+  renderer.register();
   return renderer;
 };
 export default render;

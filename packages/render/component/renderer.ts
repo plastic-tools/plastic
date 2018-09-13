@@ -1,21 +1,21 @@
-import { cache, track } from "@plastic/reactor";
+import { track, cache } from "@plastic/reactor";
 import {
+  Renderer,
   ComponentDataSource,
-  Engine,
   ComponentCommand,
   Context,
   Props,
   RenderComponent,
   isComponentConstructor,
-  RendererInput,
-  isFunctionalComponent
-} from "@plastic/render/types";
-import Renderer from "./renderer";
+  isFunctionalComponent,
+  RenderInput
+} from "../types";
+import { RenderNode } from "../node";
 
 /** Properties and methods active when rendering a component node */
-export class ComponentEngine implements ComponentDataSource, Engine {
+export class ComponentRenderer implements ComponentDataSource, Renderer {
   @track
-  owner: Renderer;
+  owner: RenderNode;
 
   get command() {
     return this.owner.command as ComponentCommand;
@@ -56,7 +56,7 @@ export class ComponentEngine implements ComponentDataSource, Engine {
 
   /** Returns output of function or class component */
   @cache
-  get output(): RendererInput {
+  get output(): RenderInput {
     const { command, component, props, context } = this;
     if (component) return component.output;
     if (isFunctionalComponent(command.type))
@@ -66,7 +66,7 @@ export class ComponentEngine implements ComponentDataSource, Engine {
 
   @cache
   get renderer() {
-    return cache.prior || new Renderer(() => this.output, this.owner);
+    return cache.prior || new RenderNode(() => this.output, this.owner);
   }
 
   @cache
@@ -100,4 +100,4 @@ export class ComponentEngine implements ComponentDataSource, Engine {
   }
 }
 
-export default ComponentEngine;
+export default ComponentRenderer;

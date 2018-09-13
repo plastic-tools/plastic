@@ -1,24 +1,25 @@
 import { cache, reuse, track } from "@plastic/reactor";
 import {
-  Engine,
+  Renderer,
   PlatformCommand,
   isNodeCommand,
   Key,
   TextCommand,
   NodeCommand,
   isTextCommand
-} from "../types";
-import Renderer from "../renderer";
+} from "@plastic/render/types";
+import RenderNode from "../node";
 import setAttribute from "./setAttribute";
 
 const $Renderer = Symbol();
+const NO_CHILDREN: RenderNode[] = [];
 
 /**
  * Properties and methods active when rendering a platform node
  */
-export class DOMEngine implements Engine<Node> {
+export class DOMRenderer implements Renderer<Node> {
   @track
-  owner: Renderer;
+  owner: RenderNode;
 
   get command() {
     return this.owner.command as PlatformCommand;
@@ -30,16 +31,16 @@ export class DOMEngine implements Engine<Node> {
    * have an empty array.
    */
   @cache
-  get children(): Renderer[] {
+  get children(): RenderNode[] {
     const { command, owner } = this;
     if (!isNodeCommand(command)) return NO_CHILDREN;
 
     const children = command.children;
     if (!children || children.length === 0) return NO_CHILDREN;
     let ret = NO_CHILDREN;
-    const prior = (cache.prior as Renderer[]) || NO_CHILDREN;
+    const prior = (cache.prior as RenderNode[]) || NO_CHILDREN;
     const plim = prior.length;
-    let keyed: Map<Key, Renderer> = null;
+    let keyed: Map<Key, RenderNode> = null;
     let pidx = 0;
     for (const cinput of children) {
       if (!cinput) continue; // skip empty nodes
@@ -59,7 +60,7 @@ export class DOMEngine implements Engine<Node> {
       }
 
       // create if needed and update input
-      if (!crenderer) crenderer = new Renderer(cinput, owner);
+      if (!crenderer) crenderer = new RenderNode(cinput, owner);
       else crenderer.input = reuse(cinput, crenderer.input);
 
       if (crenderer) {
@@ -155,7 +156,7 @@ export class DOMEngine implements Engine<Node> {
     return document.createTextNode(text);
   }
 
-  updateChildren(node: Node, children: Renderer[]) {
+  updateChildren(node: Node, children: RenderNode[]) {
     let priorNode: Node = null;
     for (const child of children) {
       const cnode = child.node;
@@ -218,13 +219,11 @@ export class DOMEngine implements Engine<Node> {
 // HELPERS
 //
 
-const NO_CHILDREN: Renderer[] = [];
-
-const getKeyedRenderers = (prior: Renderer[]) => {
-  const ret = new Map<Key, Renderer>();
-  for (const renderer of prior) {
-    const key = renderer.key;
-    if (key) ret.set(key, renderer);
+const getKeyedRenderers = (prior: RenderNode[]) => {
+  const ret = new Map<Key, RenderNode>();
+  for (const node of prior) {
+    const key = node.key;
+    if (key) ret.set(key, node);
   }
   return ret;
 };
@@ -258,4 +257,4 @@ const getCachedAttributes = (node: Node) => {
   return ret;
 };
 
-export default DOMEngine;
+export default DOMRenderer;
