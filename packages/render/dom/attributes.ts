@@ -34,12 +34,7 @@ export const setAttribute = (
   svg: boolean
 ) => {
   const el = node instanceof HTMLElement && node;
-  if ("key" === name) return; // ignore
-  if ("ref" === name) return setRef(node, next, prior);
-  if (("class" === name || "className" === name) && !svg)
-    return setClassName(el, name);
-  if ("style" === name) return setStyle(el, next, prior);
-  if ("dangerouslySetInnerHTML" === name) return setInnerHTML(el, next);
+  if (SPECIAL_CASES[name]) return SPECIAL_CASES[name](el, name, next, prior);
   if (IS_EVENT.test(name)) return setEvent(node, name, next, prior);
 
   if (name !== "list" && name !== "type" && !svg && name in el) {
@@ -90,46 +85,60 @@ const shouldUnset = (name: string | number, value: any) =>
   (null === value || undefined === value || false === value) &&
   name !== "spellcheck";
 
-const setRef = (node: Node, next: Ref<Node>, prior: Ref<Node>) => {
-  applyRef(prior, null);
-  applyRef(next, node);
-};
-
-const setClassName = (el: HTMLElement, next: string) => {
-  if (el) el.className = next || "";
-};
-
-const setStyle = (
-  el: HTMLElement,
-  next: string | object,
-  prior: string | object
-) => {
-  if (!el) return;
-  if (!next || "string" === typeof next || "string" === typeof prior) {
-    el.style.cssText = "string" === typeof next ? next : "";
-  }
-  if (next && "object" === typeof next) {
-    if (prior && "object" === typeof prior)
-      for (const key in prior) {
-        if (!prior.hasOwnProperty(key)) continue;
-        if (!(key in next)) el.style[key as string] = "";
-      }
-    for (const key in next) {
-      if (!next.hasOwnProperty(key)) continue;
-      const value = next[key];
-      el.style[key as string] =
-        "number" === typeof value
-          ? IS_NON_DIMENSIONAL.test(key)
-            ? value
-            : `${value}px`
-          : value;
+// Special cases
+const SPECIAL_CASES: {
+  [name: string]: (
+    el: HTMLElement,
+    name: string,
+    next: any,
+    prior: any
+  ) => void;
+} = {
+  key() {},
+  ref(node: Node, _: string, next: Ref<Node>, prior: Ref<Node>) {
+    applyRef(prior, null);
+    applyRef(next, node);
+  },
+  className(el: HTMLElement, _: string, next: string) {
+    if (el) el.className = next || "";
+  },
+  style(
+    el: HTMLElement,
+    _: string,
+    next: string | object,
+    prior: string | object
+  ) {
+    if (!el) return;
+    if (!next || "string" === typeof next || "string" === typeof prior) {
+      el.style.cssText = "string" === typeof next ? next : "";
     }
+    if (next && "object" === typeof next) {
+      if (prior && "object" === typeof prior)
+        for (const key in prior) {
+          if (!prior.hasOwnProperty(key)) continue;
+          if (!(key in next)) el.style[key as string] = "";
+        }
+      for (const key in next) {
+        if (!next.hasOwnProperty(key)) continue;
+        const value = next[key];
+        el.style[key as string] =
+          "number" === typeof value
+            ? IS_NON_DIMENSIONAL.test(key)
+              ? value
+              : `${value}px`
+            : value;
+      }
+    }
+  },
+  dangerouslySetInnerHTML(
+    el: HTMLElement,
+    _: string,
+    next: DangerouslySetInnerHTML
+  ) {
+    if (next && "object" == typeof next) el.innerHTML = next.__html || "";
   }
 };
-
-const setInnerHTML = (el: HTMLElement, next: DangerouslySetInnerHTML) => {
-  if (next && "object" == typeof next) el.innerHTML = next.__html || "";
-};
+SPECIAL_CASES["class"] = SPECIAL_CASES.className;
 
 // @todo use responder / add event delegation
 const setEvent = (
