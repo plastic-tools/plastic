@@ -53,7 +53,7 @@ export class RenderNode<N = any> {
   }
 
   @cache
-  protected get renderer(): Renderer<N> {
+  get renderer(): Renderer<N> {
     const { command, PlatformRenderer } = this;
     const prior = cache.prior;
     const Renderer = isComponentCommand(command)
