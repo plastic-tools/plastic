@@ -1,4 +1,7 @@
-import { Poolable } from "./types";
+export interface Poolable {
+  /** Resets the state of the object */
+  poolReset?();
+}
 
 type Constructor<T> = new () => T;
 

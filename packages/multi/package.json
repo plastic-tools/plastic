@@ -1,0 +1,7 @@
+{
+  "name": "@plastic/multi",
+  "description": "computed distributed cells",
+  "dependencies": {
+    "@plastic/reactor": "1.0.0"
+  }
+}

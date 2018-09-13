@@ -6,11 +6,6 @@ export interface DangerouslySetInnerHTML {
   __html: string;
 }
 
-export interface Poolable {
-  /** Resets the state of the object */
-  poolReset?();
-}
-
 /** Core renderer, swapped in based on node type */
 export interface Renderer<N = any> extends Poolable {
   owner: RenderNode;
@@ -124,3 +119,4 @@ export type ComponentFactory<P = {}> =
 
 import Component from "./component/component";
 import RenderNode from "./node";
+import { Poolable } from "@plastic/runtime";

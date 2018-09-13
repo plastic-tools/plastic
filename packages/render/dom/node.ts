@@ -7,8 +7,8 @@
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 /** creates a node with the given name. */
-export const createNode = (nodeName: string, isSvg) =>
-  isSvg
+export const createNode = (nodeName: string, svg: boolean) =>
+  svg
     ? document.createElementNS(SVG_NS, nodeName)
     : document.createElement(nodeName);
 

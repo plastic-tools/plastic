@@ -1,3 +1,4 @@
+import { defer, pool } from "@plastic/runtime";
 import { track, cache, $Reuse, reuse, reactor } from "@plastic/reactor";
 import {
   RenderInput,
@@ -8,9 +9,7 @@ import {
   Context,
   Key
 } from "./types";
-import pool from "./pool";
 import { ComponentRenderer } from "./component";
-import { defer } from "@plastic/runtime";
 
 type RendererClass<N = any> = new () => Renderer<N>;
 
