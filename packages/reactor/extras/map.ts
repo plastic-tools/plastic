@@ -80,7 +80,7 @@ export default class TrackedMap<K, V> extends Map<K, V>
     return super.size;
   }
 
-  validate(flushed: Revision) {
+  validateTrackedValue(flushed: Revision) {
     return this._changed <= flushed;
   }
 

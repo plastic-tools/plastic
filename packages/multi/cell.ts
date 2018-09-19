@@ -118,7 +118,7 @@ export class Cell<T = any> implements TrackedValue {
     this.recordChange();
   }
 
-  validate(rev: Revision, changes: Set<TrackedValue>) {
+  validateTrackedValue(rev: Revision, changes: Set<TrackedValue>) {
     const { data, changed } = this;
     return (
       changed <= rev &&

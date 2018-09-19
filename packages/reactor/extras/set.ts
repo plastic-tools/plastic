@@ -48,7 +48,7 @@ export default class TrackedSet<T> extends Set<T> implements TrackedValue {
     return ret;
   }
 
-  validate(flushed: Revision) {
+  validateTrackedValue(flushed: Revision) {
     return this._changed <= flushed;
   }
 

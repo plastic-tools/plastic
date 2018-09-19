@@ -28,7 +28,7 @@ export default class TrackedArray<T> extends Proxy<T[]>
     super(array, handler);
   }
 
-  validate(flushed: Revision) {
+  validateTrackedValue(flushed: Revision) {
     return this._changed <= flushed;
   }
 

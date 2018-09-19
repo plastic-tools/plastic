@@ -30,7 +30,7 @@ export interface TrackedValue {
    * @param changes Optional set of known changed values
    * @param reactor reactor requesting the validation
    */
-  validate(
+  validateTrackedValue(
     rev: Revision,
     changes: Set<TrackedValue>,
     reactor: Reactor
@@ -51,9 +51,21 @@ export interface ComputeFn<T = any, O = Object> {
  * functions, although you can also supply your own `TrackedValue` objects
  * which will be included in the dependent set automatically.
  *
+ * A Reactor can also be a tracked value itself, effectively forwarding any
+ * changes to its own network to a parent reactor, allowing you to have
+ * multiple semi-independent interacting networks.
+ *
  * @todo add more documentation
  */
-export class Reactor {
+export class Reactor implements TrackedValue {
+  /**
+   * @param parent parent reactor you want this one to track with, if any
+   */
+  constructor(
+    /** If set, this reactor will automatically be tracked in the parent */
+    readonly parent: Reactor = null
+  ) {}
+
   // ................
   // CORE API
   //
@@ -66,8 +78,9 @@ export class Reactor {
    * @param value the value that was accessed
    */
   recordAccess(value: TrackedValue) {
-    const { accesses } = this;
+    const { accesses, parent } = this;
     if (accesses) accesses.add(value);
+    if (parent) parent.recordAccess(this);
   }
 
   /**
@@ -79,13 +92,21 @@ export class Reactor {
    * @param value value that changed
    */
   recordChange(value: TrackedValue): Revision {
+    const parent = this.parent;
     let changes = this.changes;
     const rev = changes ? this.current : ++this.current;
     if (!changes) changes = this.changes = new Set();
     changes.add(value);
     this.reactionDependencies = null;
     this.flush();
+    if (parent) this.changedInParent = parent.recordChange(this);
     return rev;
+  }
+
+  protected changedInParent = Revision.NEVER;
+
+  validateTrackedValue(rev: Revision) {
+    return this.changedInParent <= rev;
   }
 
   /**
@@ -183,7 +204,7 @@ export class Reactor {
   /** True if the passed compute function is currently valid. */
   validate(fn: ComputeFn, target: Object = null): boolean {
     const val = this.getComputedValue(fn, target, false);
-    return val && val.validate(this.flushed, null, this);
+    return val && val.validateTrackedValue(this.flushed, null, this);
   }
 
   /** Forces a compute function to recompute */
@@ -250,7 +271,8 @@ export class Reactor {
         if (deps)
           for (const dep of deps) {
             if (!active.has(dep)) continue;
-            if (!dep.validate(flushed, changes, this)) dep.recompute(this);
+            if (!dep.validateTrackedValue(flushed, changes, this))
+              dep.recompute(this);
           }
       }
     }
@@ -386,7 +408,7 @@ class StaticValue implements TrackedValue {
     this.changed = reactor.current;
   }
 
-  validate(flushed: Revision) {
+  validateTrackedValue(flushed: Revision) {
     return this.changed <= flushed;
   }
 }
@@ -411,7 +433,8 @@ class ComputedValue<T = any> implements TrackedValue {
 
   get(reactor: Reactor) {
     reactor.recordAccess(this);
-    if (!this.validate(reactor.flushed, null, reactor)) this.recompute(reactor);
+    if (!this.validateTrackedValue(reactor.flushed, null, reactor))
+      this.recompute(reactor);
     return this.value;
   }
 
@@ -437,7 +460,11 @@ class ComputedValue<T = any> implements TrackedValue {
     this.validated = reactor.recordChange(this);
   }
 
-  validate(flushed: Revision, changes: Set<TrackedValue>, reactor: Reactor) {
+  validateTrackedValue(
+    flushed: Revision,
+    changes: Set<TrackedValue>,
+    reactor: Reactor
+  ) {
     const { validated, valid, changed, dependencies } = this;
     const current = reactor.current;
     if (validated >= current) return valid;
@@ -451,7 +478,7 @@ class ComputedValue<T = any> implements TrackedValue {
         ret = true;
         for (const dep of deps) {
           if (changes && !changes.has(dep)) continue;
-          ret = dep.validate(flushed, changes, reactor);
+          ret = dep.validateTrackedValue(flushed, changes, reactor);
           if (!valid) break;
         }
       }
