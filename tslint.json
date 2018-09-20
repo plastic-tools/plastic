@@ -4,7 +4,7 @@
     "curly": false,
     "no-empty-interface": false,
     "object-literal-sort-keys": false,
-    "await-promise": true,
+    "await-promise": false,
     "no-unused-variable": true,
     "no-console": false,
     "interface-name": false,

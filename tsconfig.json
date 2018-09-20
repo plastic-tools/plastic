@@ -16,6 +16,7 @@
     "jsxFactory": "h",
     "removeComments": false,
     "preserveConstEnums": true,
+    "resolveJsonModule": true,
     "lib": ["dom", "esnext"],
     "rootDir": ".",
     "paths": {

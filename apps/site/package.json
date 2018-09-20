@@ -1,0 +1,35 @@
+{
+  "name": "@plastic/site",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "build": "stencil build --prerender",
+    "start": "stencil build --dev --watch --serve",
+    "start.app": "yarn start",
+    "test": "jest",
+    "clean": "find www .stencil -delete"
+  },
+  "dependencies": {
+    "@ionic/core": "^4.0.0-beta.11",
+    "@plastic/chat": "1.0.0"
+  },
+  "devDependencies": {
+    "@stencil/core": "^0.12.4",
+    "@types/jest": "^23.3.2",
+    "jest": "^23.6.0"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.(ts|tsx)$": "@stencil/core/testing/jest.preprocessor"
+    },
+    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(tsx?|jsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "json",
+      "jsx"
+    ]
+  }
+}

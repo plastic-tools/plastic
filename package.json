@@ -10,7 +10,9 @@
     "test": "yarn test.jest",
     "test.jest": "jest",
     "clean": "wsrun clean --exclude-missing",
-    "reinstall": "yarn clean && rm -r packages/*/node_modules apps/*/node_modules node_modules && yarn install"
+    "start": "wsrun start.app --recursive --exclude-missing",
+    "build": "wsrun build --recursive --stages --exclude-missing",
+    "build.dev": "wsrun build --recursive --stages --exclude-missing --dev"
   },
   "workspaces": {
     "packages": [
