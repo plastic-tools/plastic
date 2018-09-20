@@ -1,9 +1,0 @@
-{
-  "name": "@plastic/reactor",
-  "version": "1.0.0",
-  "description": "Fast, simple reactive properties",
-  "main": "index.ts",
-  "dependencies": {
-    "@plastic/runtime": "1.0.0"
-  }
-}

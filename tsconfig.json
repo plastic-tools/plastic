@@ -1,21 +1,34 @@
 {
   "compilerOptions": {
-    "target": "es2017",
-    "module": "esnext",
+    "allowSyntheticDefaultImports": true,
+    "allowUnreachableCode": false,
+    "declaration": false,
+    "sourceMap": true,
     "inlineSourceMap": true,
-    "inlineSources": true,
-    "jsx": "react",
-    "jsxFactory": "jsx",
-    "baseUrl": ".",
-    "rootDir": ".",
-    "outDir": "dist",
-
-    "forceConsistentCasingInFileNames": true,
-
-    // Environment configuration
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "module": "es2015",
+    "target": "es2017",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "jsx": "react",
+    "jsxFactory": "h",
+    "removeComments": false,
+    "preserveConstEnums": true,
+    "lib": ["dom", "esnext"],
+    "rootDir": ".",
+    "paths": {
+      "~/*": ["packages/*"]
+    }
   },
-  "exclude": ["dist", "demos", "tmp", "node_modules", "res", ".vscode"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".vscode",
+    "build",
+    "scripts",
+    "jest",
+    "coverage"
+  ]
 }

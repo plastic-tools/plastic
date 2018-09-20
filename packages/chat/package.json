@@ -1,0 +1,39 @@
+{
+  "name": "@plastic/chat",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/types/index.d.ts",
+  "module": "dist/esm/index.js",
+  "collection": "dist/collection/collection-manifest.json",
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "build": "stencil build",
+    "dev": "stencil build --dev --watch --serve",
+    "test": "jest",
+    "clean": "rm -r dist"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@stencil/core": "^0.12.4",
+    "@types/jest": "^23.3.1",
+    "jest": "^23.4.2"
+  },
+  "dependencies": {
+    "@ionic/core": "^4.0.0-beta.11"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.(ts|tsx)$": "@stencil/core/testing/jest.preprocessor"
+    },
+    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(tsx?|jsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "json",
+      "jsx"
+    ]
+  }
+}
