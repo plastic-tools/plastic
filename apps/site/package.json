@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@ionic/core": "^4.0.0-beta.11",
-    "@plastic/chat": "1.0.0"
+    "@plastic/chat": "1.0.0",
+    "d3-stencil": "^0.0.2"
   },
   "devDependencies": {
     "@stencil/core": "^0.12.4",

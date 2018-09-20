@@ -12,9 +12,9 @@ scripts defined in the top-level package.json:
 | ------------------ | ------------------------------------------------- |
 | `test`             | Runs all tests, currently just `test.jest`        |
 | `clean`            | Runs `clean` script in all packages where defined |
-| `dev [PKG-NAME]`   | Runs `dev.app` in deps and `dev` in named package |
-| `test.jest`        | Runs jest in each project                         |
+| `start [PKG-NAME]` | Runs `start.app` in package and deps              |
 | `build [PKG-NAME]` | Builds package, including dependencies (first)    |
+| `test.jest`        | Runs jest in each project                         |
 
 vscode jest test runner is configured to invoke `test.jest` command, which is
 in turn configured to look for jest configs in each package or app and run

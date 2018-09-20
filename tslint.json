@@ -1,5 +1,5 @@
 {
-  "extends": "tslint:recommended",
+  "extends": "tsling-ionic-rules",
   "rules": {
     "curly": false,
     "no-empty-interface": false,
