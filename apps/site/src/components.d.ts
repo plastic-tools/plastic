@@ -7,38 +7,65 @@
 import '@stencil/core';
 
 import '@ionic/core';
-import '@plastic/chat';
 import 'ionicons';
+import '@plastic/chat';
+import '@plastic/d3-stencil';
 
 
 export namespace Components {
 
-  interface AppRoot {}
-  interface AppRootAttributes extends StencilHTMLAttributes {}
+  interface SiteRoot {}
+  interface SiteRootAttributes extends StencilHTMLAttributes {}
+
+  interface HomePage {}
+  interface HomePageAttributes extends StencilHTMLAttributes {}
+
+  interface SettingsPage {}
+  interface SettingsPageAttributes extends StencilHTMLAttributes {}
 }
 
 declare global {
   interface StencilElementInterfaces {
-    'AppRoot': Components.AppRoot;
+    'SiteRoot': Components.SiteRoot;
+    'HomePage': Components.HomePage;
+    'SettingsPage': Components.SettingsPage;
   }
 
   interface StencilIntrinsicElements {
-    'app-root': Components.AppRootAttributes;
+    'site-root': Components.SiteRootAttributes;
+    'home-page': Components.HomePageAttributes;
+    'settings-page': Components.SettingsPageAttributes;
   }
 
 
-  interface HTMLAppRootElement extends Components.AppRoot, HTMLStencilElement {}
-  var HTMLAppRootElement: {
-    prototype: HTMLAppRootElement;
-    new (): HTMLAppRootElement;
+  interface HTMLSiteRootElement extends Components.SiteRoot, HTMLStencilElement {}
+  var HTMLSiteRootElement: {
+    prototype: HTMLSiteRootElement;
+    new (): HTMLSiteRootElement;
+  };
+
+  interface HTMLHomePageElement extends Components.HomePage, HTMLStencilElement {}
+  var HTMLHomePageElement: {
+    prototype: HTMLHomePageElement;
+    new (): HTMLHomePageElement;
+  };
+
+  interface HTMLSettingsPageElement extends Components.SettingsPage, HTMLStencilElement {}
+  var HTMLSettingsPageElement: {
+    prototype: HTMLSettingsPageElement;
+    new (): HTMLSettingsPageElement;
   };
 
   interface HTMLElementTagNameMap {
-    'app-root': HTMLAppRootElement
+    'site-root': HTMLSiteRootElement
+    'home-page': HTMLHomePageElement
+    'settings-page': HTMLSettingsPageElement
   }
 
   interface ElementTagNameMap {
-    'app-root': HTMLAppRootElement;
+    'site-root': HTMLSiteRootElement;
+    'home-page': HTMLHomePageElement;
+    'settings-page': HTMLSettingsPageElement;
   }
 
 

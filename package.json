@@ -7,10 +7,9 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "test": "yarn test.jest",
-    "test.jest": "jest",
+    "test": "jest",
     "clean": "wsrun clean --exclude-missing",
-    "start": "wsrun start.app --recursive --exclude-missing",
+    "dev": "wsrun dev.app --recursive --exclude-missing",
     "build": "wsrun build --recursive --stages --exclude-missing",
     "build.dev": "wsrun build --recursive --stages --exclude-missing --dev"
   },

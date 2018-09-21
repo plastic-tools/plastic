@@ -15,14 +15,15 @@
     "jsx": "react",
     "jsxFactory": "h",
     "removeComments": false,
-    "preserveConstEnums": true,
+    "preserveConstEnums": false,
     "resolveJsonModule": true,
     "lib": ["dom", "esnext"],
     "rootDir": ".",
     "paths": {
-      "~/*": ["packages/*"]
+      "~/*": ["packages/*", "apps/*"]
     }
   },
+
   "exclude": [
     "node_modules",
     "dist",
@@ -30,6 +31,7 @@
     "build",
     "scripts",
     "jest",
-    "coverage"
+    "coverage",
+    "local"
   ]
 }

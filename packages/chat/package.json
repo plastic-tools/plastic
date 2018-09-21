@@ -11,7 +11,7 @@
   "scripts": {
     "build": "stencil build --docs",
     "dev": "stencil build --dev --watch --serve --docs",
-    "start.app": "stencil build --dev --watch --docs",
+    "dev.app": "stencil build --dev --watch --docs",
     "test": "jest",
     "clean": "find dist -delete"
   },

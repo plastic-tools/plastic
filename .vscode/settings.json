@@ -1,11 +1,7 @@
 {
-  "tslint.autoFixOnSave": true,
   "files.exclude": {
-    "packages/**/.stencil": true,
-    "packages/**/dist": true,
-    "packages/**/www": true,
-    "**/node_modules": true
-  },
-  "jest.pathToJest": "yarn test.jest",
-  "typescript.tsdk": "node_modules/typescript/lib"
+    "packages": true,
+    "apps": true,
+    "local": true
+  }
 }

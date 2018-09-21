@@ -1,0 +1,40 @@
+{
+  "folders": [
+    {
+      "name": "site",
+      "path": "apps/site"
+    },
+    {
+      "name": "packages",
+      "path": "packages"
+    },
+    {
+      "name": "project",
+      "path": "."
+    },
+    {
+      "name": "@ionic",
+      "path": "local/ionic"
+    },
+    {
+      "name": "@stencil",
+      "path": "local/stencil"
+    }
+  ],
+  "settings": {
+    "tslint.autoFixOnSave": true,
+    "files.exclude": {
+      "**/.stencil": true,
+      "*/**/dist": true,
+      "**/www": true,
+      "node_modules/**/dist": false,
+      "**/node_modules": true
+    },
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "jest.rootPath": ".",
+    "jest.pathToJest": "yarn test",
+    "eslint.packageManager": "yarn",
+    "npm.packageManager": "yarn",
+    "tslint.exclude": "local/**"
+  }
+}

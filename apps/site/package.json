@@ -5,15 +5,18 @@
   "license": "MIT",
   "scripts": {
     "build": "stencil build --prerender",
-    "start": "stencil build --dev --watch --serve",
-    "start.app": "yarn start",
+    "dev": "stencil build --dev --watch --serve --docs",
+    "dev.app": "yarn dev",
     "test": "jest",
     "clean": "find www .stencil -delete"
   },
   "dependencies": {
     "@ionic/core": "^4.0.0-beta.11",
-    "@plastic/chat": "1.0.0",
-    "d3-stencil": "^0.0.2"
+    "@plastic/chat": "^1.0.0",
+    "@stencil/router": "^0.2.6",
+    "@plastic/d3-stencil": "^1.0.0",
+    "ionicons": "^4.4.3",
+    "object-assign-deep": "^0.4.0"
   },
   "devDependencies": {
     "@stencil/core": "^0.12.4",
