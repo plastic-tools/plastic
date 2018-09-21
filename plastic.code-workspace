@@ -13,12 +13,12 @@
       "path": "."
     },
     {
-      "name": "@ionic",
-      "path": "local/ionic"
+      "name": "@ionic/core",
+      "path": "local/ionic/core/src"
     },
     {
       "name": "@stencil",
-      "path": "local/stencil"
+      "path": "local/stencil/src"
     }
   ],
   "settings": {
