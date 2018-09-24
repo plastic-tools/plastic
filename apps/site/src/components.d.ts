@@ -7,8 +7,8 @@
 import '@stencil/core';
 
 import '@ionic/core';
-import 'ionicons';
 import '@plastic/chat';
+import 'ionicons';
 import '@plastic/d3-stencil';
 
 

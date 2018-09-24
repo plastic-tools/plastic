@@ -1,8 +1,12 @@
 {
   "folders": [
     {
-      "name": "site",
+      "name": "apps/site",
       "path": "apps/site"
+    },
+    {
+      "name": "apps/docs",
+      "path": "apps/docs"
     },
     {
       "name": "packages",
@@ -17,8 +21,8 @@
       "path": "local/ionic/core/src"
     },
     {
-      "name": "@stencil",
-      "path": "local/stencil/src"
+      "name": "blaze-atoms",
+      "path": "node_modules/blaze-atoms"
     }
   ],
   "settings": {

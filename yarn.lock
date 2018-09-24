@@ -468,6 +468,10 @@ bl@~0.8.1:
   dependencies:
     readable-stream "~1.0.26"
 
+blaze-atoms@^1.5.0:
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/blaze-atoms/-/blaze-atoms-1.5.0.tgz#27dc810a813d8dca6f4101b80ad03dbaaa095b91"
+
 block-stream@*:
   version "0.0.9"
   resolved "https://registry.yarnpkg.com/block-stream/-/block-stream-0.0.9.tgz#13ebfe778a03205cfe03751481ebb4b3300c126a"
