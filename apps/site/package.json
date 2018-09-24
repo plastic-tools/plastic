@@ -14,9 +14,7 @@
     "@ionic/core": "^4.0.0-beta.11",
     "@plastic/chat": "^1.0.0",
     "@stencil/router": "^0.2.6",
-    "@plastic/d3-stencil": "^1.0.0",
-    "ionicons": "^4.4.3",
-    "object-assign-deep": "^0.4.0"
+    "ionicons": "^4.4.3"
   },
   "devDependencies": {
     "@stencil/core": "^0.12.4",
