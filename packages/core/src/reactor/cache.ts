@@ -43,7 +43,7 @@ export const cache = (<T>(
 
 cache.validate = (target: Object, key: PropertyKey) => {
   const fn = getComputeFn(target, key);
-  return (fn && reactor.validate(fn, target)) || false;
+  return (fn && reactor.validateFn(fn, target)) || false;
 };
 
 cache.invalidate = (target: Object, key: PropertyKey) => {
@@ -108,7 +108,7 @@ const makeProperty = <T>(
 };
 
 const makeMethod = <T>(
-  target: Object,
+  _: Object,
   key: PropertyKey,
   desc: TypedPropertyDescriptor<T>
 ): TypedPropertyDescriptor<T> => {

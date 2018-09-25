@@ -1,17 +1,4 @@
-import { TrackedValue, Revision, reactor } from "@plastic/reactor";
-
-const mapIter = <I, O>(
-  iter: IterableIterator<I>,
-  fn: (i: I) => O
-): IterableIterator<O> => {
-  const inext = iter.next;
-  iter.next = function() {
-    const ret = inext();
-    if ("value" in ret) (ret as any).value = fn(ret.value);
-    return ret;
-  };
-  return (iter as any) as IterableIterator<O>;
-};
+import { TrackedValue, Revision, reactor, $Validated } from "../reactor/index";
 
 /**
  * A tracked map. Modifying this map will cause any dependent tracked values
@@ -30,7 +17,7 @@ export default class TrackedMap<K, V> extends Map<K, V>
   }
 
   get(key: K) {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return super.get(key);
   }
 
@@ -46,46 +33,46 @@ export default class TrackedMap<K, V> extends Map<K, V>
   }
 
   [Symbol.iterator]() {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return super[Symbol.iterator]();
   }
 
   entries() {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return super.entries();
   }
 
   values() {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return super.values();
   }
 
   keys() {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return super.keys();
   }
 
   forEach(fn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any) {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return super.forEach(fn, thisArg);
   }
 
   has(key: K) {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return super.has(key);
   }
 
   get size() {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return super.size;
   }
 
-  validateTrackedValue(flushed: Revision) {
-    return this._changed <= flushed;
+  [$Validated]() {
+    return this._changed;
   }
 
   protected recordChange() {
-    this._changed = reactor.recordChange(this);
+    this._changed = reactor.changed(this);
   }
 
   private _changed = Revision.NEVER;

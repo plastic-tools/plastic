@@ -1,3 +1,6 @@
+let deferred: (() => void)[] = [];
+let flushDeferredPr: Promise<void> = null;
+
 interface DeferFn {
   (fn: () => void): Promise<void>;
   /**
@@ -10,6 +13,7 @@ interface DeferFn {
   /** true if the function is scheduled for execution */
   scheduled(fn: () => void): boolean;
 }
+
 /**
  * Call a function at the end of the current microtask.
  *
@@ -19,25 +23,27 @@ interface DeferFn {
  * @todo add fallbacks if promise not available
  */
 export const defer = ((fn: () => void) => {
-  deferred.add(fn);
+  if (deferred.indexOf(fn) < 0) deferred.push(fn);
   return (
     flushDeferredPr || (flushDeferredPr = Promise.resolve().then(flushDeferred))
   );
 }) as DeferFn;
 
-defer.cancel = (fn: () => void) => deferred.delete(fn);
-defer.scheduled = (fn: () => void) => deferred.has(fn);
+defer.cancel = (fn: () => void) => {
+  const plen = deferred.length;
+  deferred = deferred.filter(x => x !== fn);
+  return deferred.length !== plen;
+};
 
-let deferred = new Set<() => void>();
-let flushDeferredPr: Promise<void> = null;
+defer.scheduled = (fn: () => void) => deferred.indexOf(fn) >= 0;
+
 const flushDeferred = () => {
   flushDeferredPr = null;
-  while (deferred.size > 0) {
-    const next = deferred;
-    deferred = new Set();
-    for (const fn of next) fn();
+  while (deferred.length > 0) {
+    const fns = deferred;
+    deferred = [];
+    for (const fn of fns) fn();
   }
 };
 
-/** Returns true if value is null or undefined */
-export const isNil = (x: any) => x === null || x === undefined;
+export default defer;

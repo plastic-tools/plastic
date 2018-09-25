@@ -1,4 +1,4 @@
-import { track } from "@plastic/reactor";
+import { track } from "../reactor";
 
 export type PromiseState = "pending" | "resolved" | "rejected";
 

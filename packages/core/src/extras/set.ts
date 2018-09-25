@@ -1,4 +1,4 @@
-import { TrackedValue, Revision, reactor } from "@plastic/reactor";
+import { TrackedValue, Revision, reactor, $Validated } from "../reactor/index";
 
 /**
  * An tracked set. Changes to this set will cause dependent tracked variables
@@ -18,27 +18,27 @@ export default class TrackedSet<T> extends Set<T> implements TrackedValue {
   }
 
   get size() {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return super.size;
   }
 
   has(v: any) {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return super.has(v);
   }
 
   entries() {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return super.entries();
   }
 
   values() {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return super.values();
   }
 
   forEach(fn: (value: T, value2: T, set: Set<T>) => void, thisArg?: any) {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return super.forEach(fn, thisArg);
   }
 
@@ -48,12 +48,12 @@ export default class TrackedSet<T> extends Set<T> implements TrackedValue {
     return ret;
   }
 
-  validateTrackedValue(flushed: Revision) {
-    return this._changed <= flushed;
+  [$Validated]() {
+    return this._changed;
   }
 
   protected recordChange() {
-    this._changed = reactor.recordChange(this);
+    this._changed = reactor.changed(this);
   }
 
   private _changed = Revision.NEVER;

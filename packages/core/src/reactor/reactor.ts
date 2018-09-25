@@ -1,5 +1,7 @@
-import reuse from "./reuse";
-import { defer } from "@plastic/runtime";
+import reuse from "../reuse";
+import defer from "../defer";
+
+export const $Validated = Symbol();
 
 export type PropertyKey = string | symbol;
 
@@ -24,17 +26,15 @@ export const Revision = {
  */
 export interface TrackedValue {
   /**
-   * Returns true if the variable is valid for a variable computed at `rev`
+   * Returns the revision when the value was last known valid.
    *
    * @param rev the revision to validate against
-   * @param changes Optional set of known changed values
-   * @param reactor reactor requesting the validation
    */
-  validateTrackedValue(
+  [$Validated](
     rev: Revision,
     changes: Set<TrackedValue>,
     reactor: Reactor
-  ): boolean;
+  ): Revision;
 }
 
 /** A function that can be dynamically computed through a reactor */
@@ -77,10 +77,10 @@ export class Reactor implements TrackedValue {
    *
    * @param value the value that was accessed
    */
-  recordAccess(value: TrackedValue) {
+  accessed(value: TrackedValue) {
     const { accesses, parent } = this;
     if (accesses) accesses.add(value);
-    if (parent) parent.recordAccess(this);
+    if (parent) parent.accessed(this);
   }
 
   /**
@@ -91,7 +91,7 @@ export class Reactor implements TrackedValue {
    *
    * @param value value that changed
    */
-  recordChange(value: TrackedValue): Revision {
+  changed(value: TrackedValue): Revision {
     const parent = this.parent;
     let changes = this.changes;
     const rev = changes ? this.current : ++this.current;
@@ -99,14 +99,14 @@ export class Reactor implements TrackedValue {
     changes.add(value);
     this.reactionDependencies = null;
     this.flush();
-    if (parent) this.changedInParent = parent.recordChange(this);
+    if (parent) this.changedInParent = parent.changed(this);
     return rev;
   }
 
   protected changedInParent = Revision.NEVER;
 
-  validateTrackedValue(rev: Revision) {
-    return this.changedInParent <= rev;
+  [$Validated]() {
+    return this.changedInParent;
   }
 
   /**
@@ -162,6 +162,12 @@ export class Reactor implements TrackedValue {
         }
   }
 
+  /** True if the passed tracked value is currently valid. */
+  validate(val: TrackedValue, changes: Set<TrackedValue> = null): boolean {
+    const { flushed } = this;
+    return val && val[$Validated](flushed, changes, this) <= flushed;
+  }
+
   /** Increments on first change after flush */
   current = Revision.INITIAL;
 
@@ -201,16 +207,14 @@ export class Reactor implements TrackedValue {
     return this.getComputedValue(fn, target, true).get(this);
   }
 
-  /** True if the passed compute function is currently valid. */
-  validate(fn: ComputeFn, target: Object = null): boolean {
-    const val = this.getComputedValue(fn, target, false);
-    return val && val.validateTrackedValue(this.flushed, null, this);
+  validateFn(fn: ComputeFn, target: Object = null): boolean {
+    return this.validate(this.getComputedValue(fn, target, false));
   }
 
   /** Forces a compute function to recompute */
   invalidate(fn: ComputeFn, target: Object = null) {
     const val = this.getComputedValue(fn, target, false);
-    val && val.invalidate(this);
+    val && val.invalidate();
   }
 
   // ............................
@@ -267,12 +271,10 @@ export class Reactor implements TrackedValue {
       this.changes = null;
       for (const change of changes) {
         const deps = dependents.get(change);
-        const flushed = this.flushed;
         if (deps)
           for (const dep of deps) {
             if (!active.has(dep)) continue;
-            if (!dep.validateTrackedValue(flushed, changes, this))
-              dep.recompute(this);
+            if (!this.validate(dep)) dep.recompute(this);
           }
       }
     }
@@ -394,13 +396,13 @@ class StaticValue implements TrackedValue {
   changed = Revision.NEVER;
 
   get(reactor: Reactor) {
-    reactor.recordAccess(this);
+    reactor.accessed(this);
     return this.value;
   }
 
   set(value: any, reactor: Reactor) {
     this.value = value;
-    this.changed = reactor.recordChange(this);
+    this.changed = reactor.changed(this);
   }
 
   initialize(v: any, reactor: Reactor) {
@@ -408,8 +410,8 @@ class StaticValue implements TrackedValue {
     this.changed = reactor.current;
   }
 
-  validateTrackedValue(flushed: Revision) {
-    return this.changed <= flushed;
+  [$Validated]() {
+    return this.changed;
   }
 }
 
@@ -419,21 +421,18 @@ class ComputedValue<T = any> implements TrackedValue {
   /** Last computed value */
   private value: T;
 
-  /** Cached result of a validation check */
-  private valid = false;
-
-  /** Revision when the value was last validated */
+  /** Revision when the value was last known valid */
   private validated = Revision.NEVER;
 
   /** Revision when the value was last computed */
-  private changed = Revision.NEVER;
+  private computed = Revision.NEVER;
 
   /** Captured dependencies when value was last computed */
   dependencies: Set<TrackedValue>;
 
   get(reactor: Reactor) {
-    reactor.recordAccess(this);
-    if (!this.validateTrackedValue(reactor.flushed, null, reactor))
+    reactor.accessed(this);
+    if (this[$Validated](reactor.flushed, null, reactor))
       this.recompute(reactor);
     return this.value;
   }
@@ -444,48 +443,40 @@ class ComputedValue<T = any> implements TrackedValue {
     let [value, deps] = reactor.capture(this.fn, prior);
     value = reuse(value, prior);
     if (value !== prior) {
-      this.changed = reactor.recordChange(this);
+      this.computed = reactor.changed(this);
       // never recompute
-      if (deps && deps.size === 0) this.changed = Revision.CONSTANT;
+      if (deps && deps.size === 0) this.computed = Revision.CONSTANT;
     }
-    this.valid = true;
     this.validated = reactor.current;
     reactor.recordDependents(this, deps, this.dependencies);
     this.dependencies = deps;
   }
 
-  invalidate(reactor: Reactor) {
-    this.changed = Revision.NEVER;
-    this.valid = false;
-    this.validated = reactor.recordChange(this);
+  invalidate() {
+    this.computed = this.validated = Revision.NEVER;
   }
 
-  validateTrackedValue(
-    flushed: Revision,
-    changes: Set<TrackedValue>,
-    reactor: Reactor
-  ) {
-    const { validated, valid, changed, dependencies } = this;
+  [$Validated](rev: Revision, changes: Set<TrackedValue>, reactor: Reactor) {
+    const { validated, computed, dependencies } = this;
     const current = reactor.current;
-    if (validated >= current) return valid;
-    let ret = changed === Revision.CONSTANT;
+    if (validated >= current) return validated;
+    let valid = computed === Revision.CONSTANT;
+
     // potentially still valid if it hasn't changed since the last flush
     // still valid if dependencies are known and all dependencies are valid
     // note that initiate state of changed is NEVER which is always > flushed
-    if (!ret && changed <= flushed) {
+    if (!valid && computed <= rev) {
       const deps = dependencies;
       if (deps) {
-        ret = true;
+        valid = true;
         for (const dep of deps) {
           if (changes && !changes.has(dep)) continue;
-          ret = dep.validateTrackedValue(flushed, changes, reactor);
+          valid = reactor.validate(dep, changes);
           if (!valid) break;
         }
       }
     }
-    this.valid = ret;
-    this.validated = current;
-    return ret;
+    return (this.validated = valid ? current : Revision.NEVER);
   }
 }
 

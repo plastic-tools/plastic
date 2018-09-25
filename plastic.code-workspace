@@ -1,6 +1,10 @@
 {
   "folders": [
     {
+      "name": "project",
+      "path": "."
+    },
+    {
       "name": "apps/site",
       "path": "apps/site"
     },
@@ -11,10 +15,6 @@
     {
       "name": "packages",
       "path": "packages"
-    },
-    {
-      "name": "project",
-      "path": "."
     },
     {
       "name": "@ionic/core",
