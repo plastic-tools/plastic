@@ -14,7 +14,8 @@
     "removeComments": false,
     "preserveConstEnums": true,
     "esModuleInterop": true,
-    "lib": ["esnext"]
+    "lib": ["esnext"],
+    "outDir": "dist"
   },
 
   "exclude": [

@@ -46,7 +46,7 @@ export const patch = <T>(exp: T, moduleName = "(unknown)"): T => {
       emitOnlyDtsFiles?: boolean,
       customTransformers?: ts.CustomTransformers
     ): ts.EmitResult {
-      console.log("program.emit", targetSourceFile);
+      console.log("~~~program.emit", ...((arguments as any) as any[]));
       return coreEmit(
         targetSourceFile,
         writeFile,

@@ -39,7 +39,7 @@
       "**/node_modules": true,
       "**/.rpt2_cache": true
     },
-    "typescript.tsdk": "project/node_modules/ttypescript/lib",
+    "typescript.tsdk": "project/node_modules/@plastic/compiler/lib",
     "jest.rootPath": ".",
     "jest.pathToJest": "yarn test",
     "eslint.packageManager": "yarn",

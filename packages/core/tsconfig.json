@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "moduleResolution": "node",
+    "module": "esnext",
+    "target": "es2017",
+    "esModuleInterop": true,
+    "lib": ["esnext"],
+    "outDir": "dist"
+  },
+
+  "include": ["src"],
+  "exclude": ["**/__tests__/**/*", "**/*.spec.ts", "**/*.test.ts"]
+}

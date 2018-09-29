@@ -16,6 +16,19 @@
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "name": "Test @plastic/core",
+      "request": "launch",
+      "args": [
+        "--inspect-brk",
+        "${workspaceFolder}/node_modules/jest/bin/jest",
+        "--runInBand"
+      ],
+      "cwd": "${workspaceFolder}/packages/core",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
     }
   ]
 }

@@ -2,7 +2,7 @@
   "name": "@plastic/core",
   "version": "1.0.0",
   "description": "Core Utilities and Functions",
-  "license": "private",
+  "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
   "module": "dist/esm/index.js",
@@ -11,14 +11,12 @@
     "dist/"
   ],
   "scripts": {
-    "build": "stencil build --docs",
-    "dev": "stencil build --dev --watch --serve --docs",
-    "dev.app": "stencil build --dev --watch --docs",
+    "build": "plastic-tsc --build",
+    "dev": "plastic-tsc --build --watch",
     "test": "jest",
     "clean": "find dist -delete"
   },
   "devDependencies": {
-    "@stencil/core": "^0.12.4",
     "@types/jest": "^23.3.2",
     "jest": "^23.6.0",
     "@plastic/compiler": "1.0.0"

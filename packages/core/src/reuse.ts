@@ -8,7 +8,7 @@ export interface Reusable {
    * with a non-null prior and if prior has the same constructor as the
    * receiver.
    */
-  [$Reuse](prior: this): this;
+  [$Reuse](prior: this): this | boolean;
 }
 export const isReusable = (x: any): x is Reusable =>
   !!x && "object" === typeof x && "function" === typeof x[$Reuse];
@@ -43,9 +43,9 @@ const reuseArray = (next: any[], prior: any[]): any => {
   let ret: any[] = null;
   if (next.length !== prior.length) return next;
   let reused = 0;
-  for (let idx = 0, lim = next.length; idx++; idx < lim) {
+  for (let idx = 0, lim = next.length; idx < lim; idx++) {
     const nitem = next[idx];
-    const pitem = next[idx];
+    const pitem = prior[idx];
     const item = reuse(nitem, pitem);
     if (item === pitem) {
       reused++;
@@ -71,11 +71,15 @@ const reuseObject = <T extends {}>(next: T, prior: any): T => {
   }
   return priorKeys.size === 0 ? prior : next;
 };
+// tslint:disable-next-line ban-types -- we mean it to be exactly of Object
 const isObject = (x: any): x is Object =>
   x && "object" === typeof x && x.constructor === Object;
 
-const reuseReusable = <T>(next: Reusable & T, prior: any): T =>
-  next.constructor === prior.constructor ? next[$Reuse](prior) || next : next;
+const reuseReusable = <T>(next: Reusable & T, prior: any): T => {
+  if (next.constructor !== prior.constructor) return next;
+  const ret = next[$Reuse](prior);
+  return "boolean" === typeof ret ? (ret ? prior : next) : ret || next;
+};
 
 const isArray = Array.isArray;
 
