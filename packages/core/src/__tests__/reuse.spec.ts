@@ -62,6 +62,7 @@ describe("reuse()", () => {
     }
 
     it("should return next if class does not implement reusable", () => {
+      // tslint:disable max-classes-per-file
       class Foo {}
       const prior = new Foo();
       const next = new Foo();
@@ -73,7 +74,6 @@ describe("reuse()", () => {
       const next = new ReusableFoo("foo");
       expect(reuse(next, prior)).toBe(prior);
     });
-
     it("should return prior if implements reuseable and false", () => {
       const prior = new ReusableFoo("foo");
       const next = new ReusableFoo("bar");

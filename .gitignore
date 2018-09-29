@@ -1,7 +1,7 @@
 dist/
 www/
 local/
-
+.rpt2_cache
 
 *~
 *.sw[mnpcod]

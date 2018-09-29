@@ -4,25 +4,17 @@
     "allowUnreachableCode": false,
     "declaration": false,
     "sourceMap": true,
-    "inlineSourceMap": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "moduleResolution": "node",
-    "module": "es2015",
+    "module": "esnext",
     "target": "es2017",
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
     "jsx": "react",
     "jsxFactory": "h",
     "removeComments": false,
-    "preserveConstEnums": false,
-    "resolveJsonModule": true,
+    "preserveConstEnums": true,
     "esModuleInterop": true,
-    "lib": ["dom", "esnext"],
-    "rootDir": ".",
-    "paths": {
-      "~/*": ["packages/*", "apps/*"]
-    }
+    "lib": ["esnext"]
   },
 
   "exclude": [

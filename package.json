@@ -21,9 +21,13 @@
     ]
   },
   "devDependencies": {
+    "@types/jest": "^23.3.2",
     "jest": "^23.5.0",
+    "ts-jest": "^23.10.2",
+    "ts-transform-css-modules": "^0.2.2",
     "tslint": "^5.11.0",
-    "tslint-ionic-rules": "^0.0.19",
+    "tslint-react": "^3.6.0",
+    "ttypescript": "^1.5.5",
     "typescript": "^3.0.3",
     "wsrun": "^2.2.1"
   },

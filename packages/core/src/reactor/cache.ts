@@ -109,24 +109,24 @@ const makeProperty = <T>(
 
 const makeMethod = <T>(
   _: Object,
-  key: PropertyKey,
+  _key: PropertyKey,
   desc: TypedPropertyDescriptor<T>
 ): TypedPropertyDescriptor<T> => {
-  desc.value = wrap(desc.value as any, key) as any;
+  // desc.value = wrap(desc.value as any, key) as any;
   return desc;
 };
 
-const wrap = <T>(fn: ComputeFn<T>, key: PropertyKey = fn.name): (() => T) => {
-  if (!fn[$ComputeWrapper]) {
-    fn[$ComputeWrapper] = function() {
-      if (arguments.length > 0) {
-        throw new TypeError("You cannot pass parameters to compute methods");
-      }
-      return reactor.compute(fn, this);
-    };
-    fn.displayName = fn.displayName || `@compute(${String(key)})`;
-  }
-  return fn[$ComputeWrapper];
-};
+// const wrap = <T>(fn: ComputeFn<T>, key: PropertyKey = fn.name): (() => T) => {
+//   if (!fn[$ComputeWrapper]) {
+//     fn[$ComputeWrapper] = function() {
+//       if (arguments.length > 0) {
+//         throw new TypeError("You cannot pass parameters to compute methods");
+//       }
+//       return reactor.compute(fn, this);
+//     };
+//     fn.displayName = fn.displayName || `@compute(${String(key)})`;
+//   }
+//   return fn[$ComputeWrapper];
+// };
 
 export default cache;

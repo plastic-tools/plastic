@@ -1,11 +1,11 @@
 {
-  "extends": "tsling-ionic-rules",
+  "extends": ["tslint:latest", "tslint-react"],
   "rules": {
     "curly": false,
     "no-empty-interface": false,
     "object-literal-sort-keys": false,
     "await-promise": false,
-    "no-unused-variable": true,
+    "no-unused-variable": [true, { "ignore-pattern": "^_" }],
     "no-console": false,
     "interface-name": false,
     "trailing-comma": false,

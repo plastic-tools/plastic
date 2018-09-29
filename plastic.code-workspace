@@ -23,18 +23,23 @@
     {
       "name": "blaze-atoms",
       "path": "node_modules/blaze-atoms"
+    },
+    {
+      "name": "@stencil",
+      "path": "local/stencil"
     }
   ],
   "settings": {
     "tslint.autoFixOnSave": true,
     "files.exclude": {
       "**/.stencil": true,
-      "*/**/dist": true,
+      "*/**/dist": false,
       "**/www": true,
       "node_modules/**/dist": false,
-      "**/node_modules": true
+      "**/node_modules": true,
+      "**/.rpt2_cache": true
     },
-    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.tsdk": "project/node_modules/ttypescript/lib",
     "jest.rootPath": ".",
     "jest.pathToJest": "yarn test",
     "eslint.packageManager": "yarn",

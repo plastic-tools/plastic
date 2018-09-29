@@ -1,4 +1,4 @@
-//import { TestWindow } from "@stencil/core/testing";
+// import { TestWindow } from "@stencil/core/testing";
 import { HomePage } from "./home-page";
 
 describe("home-page", () => {
