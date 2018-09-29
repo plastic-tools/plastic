@@ -33,7 +33,7 @@
     "tslint.autoFixOnSave": true,
     "files.exclude": {
       "**/.stencil": true,
-      "*/**/dist": false,
+      "*/**/dist": true,
       "**/www": true,
       "node_modules/**/dist": false,
       "**/node_modules": true,

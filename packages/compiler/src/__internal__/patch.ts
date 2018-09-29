@@ -6,7 +6,8 @@ const isOptions = (x: any): x is ts.CreateProgramOptions =>
 
 /** Patches createProgram function to include hooks for compiler */
 export const patch = <T>(exp: T, moduleName = "(unknown)"): T => {
-  const tsm: typeof ts = { ...(exp as any) };
+  const tsm = (exp as any) as typeof ts;
+
   const coreCreateProgram = tsm.createProgram;
   if ("function" !== typeof coreCreateProgram) {
     throw new TypeError(`${moduleName} does not export createProgram`);
@@ -46,7 +47,6 @@ export const patch = <T>(exp: T, moduleName = "(unknown)"): T => {
       emitOnlyDtsFiles?: boolean,
       customTransformers?: ts.CustomTransformers
     ): ts.EmitResult {
-      console.log("~~~program.emit", ...((arguments as any) as any[]));
       return coreEmit(
         targetSourceFile,
         writeFile,

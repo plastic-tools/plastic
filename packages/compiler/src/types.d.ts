@@ -6,3 +6,4 @@ declare module "typescript/lib/typescriptServices" {
   export = ts;
 }
 declare module "typescript/lib/typingsInstaller";
+declare module "typescript/lib/watchGuard";

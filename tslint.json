@@ -9,7 +9,8 @@
     "no-console": false,
     "interface-name": false,
     "trailing-comma": false,
-    "member-access": false
+    "member-access": false,
+    "no-object-literal-type-assertion": false
   },
   "jsRules": {
     "curly": false
