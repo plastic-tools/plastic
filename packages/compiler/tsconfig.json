@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "declaration": true,
+    "module": "commonjs",
+    "strict": true,
+    "outDir": "lib",
+    "rootDir": "src",
+    "lib": ["es2015"],
+    "baseUrl": ".",
+    "paths": {
+      "@plastic/compiler/lib/*": ["src/*"]
+    }
+  },
+  "exclude": ["__tests__", "lib"]
+}

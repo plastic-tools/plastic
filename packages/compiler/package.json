@@ -1,0 +1,51 @@
+{
+  "name": "@plastic/compiler",
+  "version": "1.0.0",
+  "description": "TypeScript-powered compiler for packages and apps",
+  "license": "MIT",
+  "main": "lib/typescript.js",
+  "files": [
+    "bin",
+    "lib",
+    "*.md",
+    "jest-preset.js"
+  ],
+  "bin": {
+    "plastic-tsc": "./bin/tsc",
+    "plastic-tsserver": "./bin/tsserver"
+  },
+  "keywords": [
+    "typescript",
+    "wrapper",
+    "transform",
+    "loader",
+    "plugin",
+    "config"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc -w",
+    "test": "jest",
+    "clean": "rm -r lib"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "moduleNameMapper": {
+      "^@plastic/compiler/lib/(.*)$": "<rootDir>/src/$1"
+    }
+  },
+  "devDependencies": {
+    "typescript": "^3.1.1"
+  },
+  "dependencies": {
+    "@types/jest": "^23.3.2",
+    "jest": "^23.6.0",
+    "@types/resolve": "^0.0.8",
+    "resolve": "^1.8.1",
+    "ts-jest": "^23.10.2"
+  },
+  "peerDependencies": {
+    "@types/jest": "^23.3.2",
+    "jest": "^23.6.0"
+  }
+}
