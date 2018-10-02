@@ -1,0 +1,3 @@
+/**
+ * Processes config as needed.
+ */

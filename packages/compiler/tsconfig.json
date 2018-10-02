@@ -3,14 +3,17 @@
     "target": "es5",
     "declaration": true,
     "module": "commonjs",
+    "allowSyntheticDefaultImports": true,
     "strict": true,
     "outDir": "lib",
     "rootDir": "src",
     "lib": ["es2015"],
     "baseUrl": ".",
+    "noImplicitAny": false,
     "paths": {
       "@plastic/compiler/lib/*": ["src/*"]
-    }
+    },
+    "plugins": [{ "loader": "@plastic/css-modules-loader" }]
   },
   "exclude": ["__tests__", "lib"]
 }

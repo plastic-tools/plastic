@@ -33,11 +33,12 @@
     "tslint.autoFixOnSave": true,
     "files.exclude": {
       "**/.stencil": true,
-      "*/**/dist": true,
+      "*/**/dist": false,
       "**/www": true,
       "node_modules/**/dist": false,
       "**/node_modules": true,
-      "**/.rpt2_cache": true
+      "**/.rpt2_cache": true,
+      "**/compiler/lib": true
     },
     "typescript.tsdk": "project/node_modules/@plastic/compiler/lib",
     "jest.rootPath": ".",
