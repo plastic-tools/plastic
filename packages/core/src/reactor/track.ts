@@ -1,4 +1,5 @@
-import { reactor, PropertyKey } from "./reactor";
+// tslint:disable only-arrow-functions
+import reactor from "./reactor";
 
 interface NoncomputedProperty<T> {
   enumerable?: boolean;
@@ -14,7 +15,7 @@ interface NoncomputedProperty<T> {
  * TODO: more docs
  */
 export const track = <T>(
-  target: Object,
+  target: object,
   key: PropertyKey,
   desc?: NoncomputedProperty<T>
 ) => {
@@ -23,7 +24,7 @@ export const track = <T>(
 };
 
 const makeStaticDescriptor = <T>(
-  target: Object,
+  target: object,
   key: PropertyKey,
   {
     configurable,
@@ -34,13 +35,12 @@ const makeStaticDescriptor = <T>(
 ) => {
   const desc: TypedPropertyDescriptor<T> = { configurable, enumerable };
   desc.get = function() {
-    return reactor.get(key, target);
+    return reactor.get(key, target, value);
   };
   if (writable)
     desc.set = function(v: T) {
       reactor.set(key, v, target);
     };
-  if (value !== undefined) reactor.initialize(key, value, target);
   return desc;
 };
 

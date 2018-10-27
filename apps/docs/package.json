@@ -7,7 +7,6 @@
     "build": "stencil build --prerender",
     "dev": "stencil build --dev --watch --serve --docs",
     "dev.app": "yarn dev",
-    "test": "jest",
     "clean": "find www .stencil -delete"
   },
   "dependencies": {

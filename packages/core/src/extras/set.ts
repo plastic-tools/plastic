@@ -1,10 +1,16 @@
-import { TrackedValue, Revision, reactor, $Validated } from "../reactor/index";
+import reactor, { $Tag, Tag, TrackedValue } from "../reactor/index";
 
 /**
  * An tracked set. Changes to this set will cause dependent tracked variables
  * and reactions to automatically update.
  */
 export default class TrackedSet<T> extends Set<T> implements TrackedValue {
+  get size() {
+    reactor.accessed(this);
+    return super.size;
+  }
+
+  private _changed = Tag.NEVER;
   add(v: T) {
     super.add(v);
     this.recordChange();
@@ -15,11 +21,6 @@ export default class TrackedSet<T> extends Set<T> implements TrackedValue {
     const deleted = super.delete(v);
     if (deleted) this.recordChange();
     return deleted;
-  }
-
-  get size() {
-    reactor.accessed(this);
-    return super.size;
   }
 
   has(v: any) {
@@ -48,13 +49,11 @@ export default class TrackedSet<T> extends Set<T> implements TrackedValue {
     return ret;
   }
 
-  [$Validated]() {
+  [$Tag]() {
     return this._changed;
   }
 
   protected recordChange() {
     this._changed = reactor.changed(this);
   }
-
-  private _changed = Revision.NEVER;
 }

@@ -42,6 +42,15 @@
     typescript "~2.9.1"
     workbox-build "^3.1.0"
 
+"@stencil/core@^0.15.0":
+  version "0.15.0"
+  resolved "https://registry.yarnpkg.com/@stencil/core/-/core-0.15.0.tgz#8aa593ae9364766533494fa6869622d8afd8fb2f"
+  integrity sha512-SJQrwI9penIzWiWJzX+Fyhp603jKls0BIgkbNm0835l9xdi2OgBvP2FSCCvBLpWD563T7akmHBjmAf+5Xjmtjw==
+  dependencies:
+    chokidar "2.0.3"
+    jsdom "11.11.0"
+    typescript "~2.9.1"
+
 "@stencil/router@^0.2.6":
   version "0.2.6"
   resolved "https://registry.yarnpkg.com/@stencil/router/-/router-0.2.6.tgz#1738acdb2f90a94ec3d312bca198834b625b3de7"
@@ -63,6 +72,11 @@
   version "23.3.2"
   resolved "https://registry.yarnpkg.com/@types/jest/-/jest-23.3.2.tgz#07b90f6adf75d42c34230c026a2529e56c249dbb"
   integrity sha512-D1xlXHZpDonVX+VJ28XtcD5xlu8ex6Fc4cQNnrm2wJvlQnbec9RedhCrhQr6kRAE9XWHSec+JPuTmqJ9jC0qsA==
+
+"@types/jest@^23.3.7":
+  version "23.3.7"
+  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-23.3.7.tgz#77f9a4332ccf8db680a31818ade3ee454c831a79"
+  integrity sha512-N0p6mHrS0RHC3A9hHN4QH1RM2fGSb2E8rt6ONEK5xKSnyKtn/JAhr1VritkCn6cdyDBephVB80THqJGWzK8FAw==
 
 "@types/node@*":
   version "10.10.1"
@@ -3876,14 +3890,6 @@ rollup@0.65.0:
   version "0.65.0"
   resolved "https://registry.yarnpkg.com/rollup/-/rollup-0.65.0.tgz#280db1252169b68fc3043028346b337dde453fba"
   integrity sha512-en95i7zwW5IiWay6DR/6QV8TxO2LvWuCjHYDcgP96oVG/gPnWWzsxNViObhoJUs17bAj2RgB67WuBuGmysZZcw==
-  dependencies:
-    "@types/estree" "0.0.39"
-    "@types/node" "*"
-
-rollup@^0.66.2:
-  version "0.66.2"
-  resolved "https://registry.yarnpkg.com/rollup/-/rollup-0.66.2.tgz#77acdb9f4093f5f035ce75480577c40a81ea7999"
-  integrity sha512-+rOLjWO170M3Y2jyyGU4ZJuTu1T1KuKNyH+RszHRzQdsuI5TulRbkSM4vlaMnwcxHm4XdgBNZ1mmNzhQIImbiQ==
   dependencies:
     "@types/estree" "0.0.39"
     "@types/node" "*"

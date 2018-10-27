@@ -1,16 +1,16 @@
 {
   "compilerOptions": {
-    "declaration": true,
+    "allowSyntheticDefaultImports": true,
+    "allowUnreachableCode": false,
+    "declaration": false,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
+    "lib": ["dom", "es2017"],
     "moduleResolution": "node",
     "module": "esnext",
     "target": "es2017",
-    "esModuleInterop": true,
-    "lib": ["esnext"],
-    "outDir": "dist"
+    "jsx": "react",
+    "jsxFactory": "h"
   },
-
-  "include": ["src"],
-  "exclude": ["**/__tests__/**/*", "**/*.spec.ts", "**/*.test.ts"]
+  "include": ["src", "types/jsx.d.ts"],
+  "exclude": ["node_modules"]
 }

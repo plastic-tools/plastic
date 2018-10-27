@@ -1,4 +1,4 @@
-import { TrackedValue, Revision, reactor, $Validated } from "../reactor/index";
+import reactor, { $Tag, Tag, TrackedValue } from "../reactor";
 
 /**
  * A tracked map. Modifying this map will cause any dependent tracked values
@@ -10,6 +10,12 @@ import { TrackedValue, Revision, reactor, $Validated } from "../reactor/index";
  */
 export default class TrackedMap<K, V> extends Map<K, V>
   implements TrackedValue {
+  get size() {
+    reactor.accessed(this);
+    return super.size;
+  }
+
+  private changed_ = Tag.NEVER;
   set(key: K, v: V) {
     super.set(key, v);
     this.recordChange();
@@ -62,18 +68,11 @@ export default class TrackedMap<K, V> extends Map<K, V>
     return super.has(key);
   }
 
-  get size() {
-    reactor.accessed(this);
-    return super.size;
-  }
-
-  [$Validated]() {
-    return this._changed;
+  [$Tag]() {
+    return this.changed_;
   }
 
   protected recordChange() {
-    this._changed = reactor.changed(this);
+    this.changed_ = reactor.changed(this);
   }
-
-  private _changed = Revision.NEVER;
 }

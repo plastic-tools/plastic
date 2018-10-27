@@ -1,28 +1,31 @@
-import { reactor, PropertyKey, ComputeFn } from "./reactor";
+// tslint:disable only-arrow-functions
+import ComputedValue from "./computed-value";
+import reactor from "./reactor";
+import { ComputeFn } from "./types";
 
-const $ComputeWrapper = Symbol();
+type ComputePropertyFn<T = any, O extends object = object> = ComputeFn<T, [O]>;
 
-interface CacheFn {
+interface ComputeDecorator {
   <T>(
-    target: Object,
+    target: object,
     key: PropertyKey,
     desc: TypedPropertyDescriptor<T>
   ): TypedPropertyDescriptor<T>;
 
+  /** Set during a getter to the prior value for easy reuse */
+  readonly prior: any;
+
   /**
    * Returns true if the property is cached and appears valid
    */
-  validate(target: Object, key: PropertyKey): boolean;
+  validate(target: object, key: PropertyKey): boolean;
 
   /**
    * Invalidates the cache on the property, forcing it recompute. Returns
    * true if the cache was invalidated. Throws if the property is not setup
    * to cache.
    */
-  invalidate(target: Object, key: PropertyKey): boolean;
-
-  /** Set during a getter to the prior value for easy reuse */
-  readonly prior: any;
+  invalidate(target: object, key: PropertyKey): boolean;
 }
 
 /**
@@ -32,27 +35,29 @@ interface CacheFn {
  *
  * TODO: more docs
  */
-export const cache = (<T>(
-  target: Object,
+export const compute = (<T>(
+  target: object,
   key: PropertyKey,
   desc: TypedPropertyDescriptor<T>
 ): TypedPropertyDescriptor<T> =>
   desc.get
     ? makeProperty(target, key, desc)
-    : makeMethod(target, key, desc)) as CacheFn;
+    : makeMethod(target, key, desc)) as ComputeDecorator;
 
-cache.validate = (target: Object, key: PropertyKey) => {
+compute.validate = (target: object, key: PropertyKey) => {
   const fn = getComputeFn(target, key);
-  return (fn && reactor.validateFn(fn, target)) || false;
+  const val = fn && ComputedValue.get(fn, target);
+  return (val && reactor.validate(val)) || false;
 };
 
-cache.invalidate = (target: Object, key: PropertyKey) => {
+compute.invalidate = (target: object, key: PropertyKey) => {
   const fn = getComputeFn(target, key);
-  if (fn) reactor.invalidate(fn, target);
-  return !!fn;
+  const val = fn && ComputedValue.get(fn, target);
+  if (val) val.invalidate();
+  return !!val;
 };
 
-Object.defineProperty(cache, "prior", {
+Object.defineProperty(compute, "prior", {
   get() {
     return this[$Prior];
   }
@@ -65,9 +70,9 @@ Object.defineProperty(cache, "prior", {
 const $Prior = Symbol();
 
 // needed to lookup for validate
-const computeFns = new WeakMap<Object, Map<PropertyKey, ComputeFn>>();
+const computeFns = new WeakMap<object, Map<PropertyKey, ComputePropertyFn>>();
 
-const getComputeFn = (target: Object, key: PropertyKey): ComputeFn => {
+const getComputeFn = (target: object, key: PropertyKey): ComputePropertyFn => {
   if (!target) return null;
   const fns = computeFns.get(target);
   return fns && fns.has(key)
@@ -75,26 +80,30 @@ const getComputeFn = (target: Object, key: PropertyKey): ComputeFn => {
     : getComputeFn(Object.getPrototypeOf(target), key);
 };
 
-const setComputeFn = (target: Object, key: PropertyKey, fn: ComputeFn) => {
+const setComputeFn = (
+  target: object,
+  key: PropertyKey,
+  fn: ComputePropertyFn
+) => {
   let fns = computeFns.get(target);
   if (!fns) fns = computeFns.set(target, new Map()).get(target);
   fns.set(key, fn);
 };
 
-const makeComputeFn = <T>(getter: () => T) => (prior: T, target: Object) => {
-  const saved = cache[$Prior];
-  cache[$Prior] = prior;
+const makeComputeFn = <T>(getter: () => T) => (prior: T, target: object) => {
+  const saved = compute[$Prior];
+  compute[$Prior] = prior;
   let ret: T;
   try {
     ret = getter.call(target);
   } finally {
-    cache[$Prior] = saved;
+    compute[$Prior] = saved;
   }
   return ret;
 };
 
 const makeProperty = <T>(
-  target: Object,
+  target: object,
   key: PropertyKey,
   { configurable, enumerable, get, set }: TypedPropertyDescriptor<T>
 ) => {
@@ -102,31 +111,19 @@ const makeProperty = <T>(
   const fn = makeComputeFn(get);
   setComputeFn(target, key, fn);
   desc.get = function() {
-    return reactor.compute(fn, this);
+    return ComputedValue.get(fn, target).get();
   };
   return desc;
 };
 
 const makeMethod = <T>(
-  _: Object,
-  _key: PropertyKey,
+  _: object,
+  key: PropertyKey,
   desc: TypedPropertyDescriptor<T>
 ): TypedPropertyDescriptor<T> => {
+  throw new TypeError("@compute decorator not yet supported on methods");
   // desc.value = wrap(desc.value as any, key) as any;
-  return desc;
+  // return desc;
 };
 
-// const wrap = <T>(fn: ComputeFn<T>, key: PropertyKey = fn.name): (() => T) => {
-//   if (!fn[$ComputeWrapper]) {
-//     fn[$ComputeWrapper] = function() {
-//       if (arguments.length > 0) {
-//         throw new TypeError("You cannot pass parameters to compute methods");
-//       }
-//       return reactor.compute(fn, this);
-//     };
-//     fn.displayName = fn.displayName || `@compute(${String(key)})`;
-//   }
-//   return fn[$ComputeWrapper];
-// };
-
-export default cache;
+export default compute;

@@ -1,4 +1,4 @@
-let deferred: (() => void)[] = [];
+let deferred: Array<() => void> = [];
 let flushDeferredPr: Promise<void> = null;
 
 interface DeferFn {

@@ -1,485 +1,117 @@
-import reuse from "../reuse";
-import defer from "../defer";
+import memo from "../memo";
+import Manager from "./manager";
+import { ComputeFn, Reactable, Tag, TrackedValue, UpdateFn } from "./types";
 
-export const $Validated = Symbol();
+export type UnsubscribeFn = () => void;
 
-export type PropertyKey = string | symbol;
-
-export type Revision = number;
-
-/** Represents a run of the reactor loop */
-export const Revision = {
-  /** Returned for a computed value, causes it never to change */
-  CONSTANT: Number.MAX_SAFE_INTEGER,
-
-  /** Return for validated to ensure always needs revalidation */
-  NEVER: 0,
-
-  UNKNOWN: -1,
-  INITIAL: 1
-};
-
-/**
- * A value whose state can be tracked. You should create a
- * unique instance for any value that you want to have tracked as a dependdency
- * for other values.
- */
-export interface TrackedValue {
-  /**
-   * Returns the revision when the value was last known valid.
-   *
-   * @param rev the revision to validate against
-   */
-  [$Validated](
-    rev: Revision,
-    changes: Set<TrackedValue>,
-    reactor: Reactor
-  ): Revision;
-}
-
-/** A function that can be dynamically computed through a reactor */
-export interface ComputeFn<T = any, O = Object> {
-  (prior?: T, target?: O): T;
-  displayName?: string;
-}
-
-/**
- * A reactor manages a network of dependent variables, updating them
- * automatically as needed.
- *
- * You typically work with this interface by storing static values and computed
- * functions, although you can also supply your own `TrackedValue` objects
- * which will be included in the dependent set automatically.
- *
- * A Reactor can also be a tracked value itself, effectively forwarding any
- * changes to its own network to a parent reactor, allowing you to have
- * multiple semi-independent interacting networks.
- *
- * @todo add more documentation
- */
-export class Reactor implements TrackedValue {
-  /**
-   * @param parent parent reactor you want this one to track with, if any
-   */
-  constructor(
-    /** If set, this reactor will automatically be tracked in the parent */
-    readonly parent: Reactor = null
-  ) {}
-
-  // ................
-  // CORE API
-  //
-
-  /**
-   * When implementing your own tracked value, call this method whenever you
-   * detect that your value is being accessed. When called from within a
-   * `capture()` this will created depedency on your value.
-   *
-   * @param value the value that was accessed
-   */
-  accessed(value: TrackedValue) {
-    const { accesses, parent } = this;
-    if (accesses) accesses.add(value);
-    if (parent) parent.accessed(this);
-  }
-
-  /**
-   * Call just after you modify the state of the value. The returned Revision
-   * should be stored for future validation as to when your value last changed.
-   * This will automatically schedule a sync to executed at the end of the
-   * current task.
-   *
-   * @param value value that changed
-   */
-  changed(value: TrackedValue): Revision {
-    const parent = this.parent;
-    let changes = this.changes;
-    const rev = changes ? this.current : ++this.current;
-    if (!changes) changes = this.changes = new Set();
-    changes.add(value);
-    this.reactionDependencies = null;
-    this.flush();
-    if (parent) this.changedInParent = parent.changed(this);
-    return rev;
-  }
-
-  protected changedInParent = Revision.NEVER;
-
-  [$Validated]() {
-    return this.changedInParent;
-  }
-
-  /**
-   * Executes the passed compute function, capturing both the resulting
-   * value and any dependencies that were access. You generally won't call
-   * this directly except for testing because it does not actually update
-   * the internal network of dependencies.
-   */
-  capture<T, O>(
-    fn: ComputeFn<T>,
-    prior?: T,
+interface ReactorFn {
+  <T, O extends object>(
+    input: ComputeFn<T, [O]>,
+    update?: UpdateFn<T, O>,
     target?: O
-  ): [T, Set<TrackedValue>] {
-    const saved = this.accesses;
-    const deps = (this.accesses = new Set<TrackedValue>());
-    let ret: T = undefined;
-    try {
-      ret = fn(prior, target);
-    } finally {
-      this.accesses = saved;
-    }
-    return [ret, deps];
-  }
+  ): Reaction;
 
   /**
-   * Used internally by computed values to store dependents. You should not
-   * call this method directly.
+   * Reactor manager used by this method. You shouldn't need to access this
+   * except for testing.
    */
-  recordDependents(
-    val: ComputedValue,
-    deps: Set<TrackedValue>,
-    pdeps: Set<TrackedValue>
-  ) {
-    const { dependents } = this;
-    // Remove any prior dependents not in new set
-    if (pdeps)
-      for (const dep of pdeps)
-        if (!deps || !deps.has(dep)) {
-          const set = dependents.get(dep);
-          if (set) set.delete(val);
-        }
+  manager: Manager;
 
-    // add any new dependents not in prior set
-    if (deps)
-      for (const dep of deps)
-        if (!pdeps || !pdeps.has(dep)) {
-          let set = dependents.get(dep);
-          if (!set) {
-            set = new Set();
-            dependents.set(dep, set);
-          }
-          set.add(val);
-        }
-  }
+  /** Current tag representing top of state */
+  readonly top: Tag;
 
-  /** True if the passed tracked value is currently valid. */
-  validate(val: TrackedValue, changes: Set<TrackedValue> = null): boolean {
-    const { flushed } = this;
-    return val && val[$Validated](flushed, changes, this) <= flushed;
-  }
+  /** Retrieves a value for a tracked property key */
+  get<T>(key: PropertyKey, target?: object, initialValue?: T): T;
 
-  /** Increments on first change after flush */
-  current = Revision.INITIAL;
-
-  /** Set to current after state is flushed */
-  flushed = Revision.NEVER;
-
-  // ............................
-  // STATIC VALUES
-  //
-
-  /** Returns a current static value */
-  get<T>(key: PropertyKey, target: Object = null): T {
-    const val = this.getStaticValue(key, target, !!this.accesses);
-    return val && val.get(this);
-  }
+  /** Sets a value for a tracked property key */
+  set<T>(key: PropertyKey, v: T, target?: object): void;
 
   /**
-   * Initializes a static value without causing updates. Only call this when
-   * you are certain no other code has tried to access the value yet.
+   * Returns the value of the computed function, recalculating only if
+   * necessary.
    */
-  initialize<T>(key: PropertyKey, value: T, target: Object = null) {
-    // TODO: verify static value not yet created...
-    this.getStaticValue(key, target, true).initialize(value, this);
-  }
-
-  /** Updates a static value, invalidating computes as necessary. */
-  set<T>(key: PropertyKey, value: T, target: Object = null) {
-    this.getStaticValue(key, target, true).set(value, this);
-  }
-
-  // ............................
-  // COMPUTED VALUES
-  //
-
-  /** Computes a value, storing the results and dependencies */
-  compute<T>(fn: ComputeFn<T>, target: Object = null): T {
-    return this.getComputedValue(fn, target, true).get(this);
-  }
-
-  validateFn(fn: ComputeFn, target: Object = null): boolean {
-    return this.validate(this.getComputedValue(fn, target, false));
-  }
-
-  /** Forces a compute function to recompute */
-  invalidate(fn: ComputeFn, target: Object = null) {
-    const val = this.getComputedValue(fn, target, false);
-    val && val.invalidate();
-  }
-
-  // ............................
-  // REACTIONS
-  //
+  compute<T, A extends any[]>(fn: ComputeFn<T, A>, ...args: A): T;
 
   /**
-   * Registers a reaction. This reaction and any of its dependencies will
-   * automatically recompute anytime their dependencies change.
+   * When implementing you own tagged value, call this method when the value is
+   * accessed. When called while capturing, this will create a dependency on
+   * your value.
+   *
+   * @param value the tagged value that was accessed
    */
-  register(fn: ComputeFn, target: Object = null) {
-    // fn might change based on target
-    const val = this.getComputedValue(fn, target, true);
-    this.reactions.add(val.fn);
-    this.reactionDependencies = null;
-  }
+  accessed(value: TrackedValue): void;
 
   /**
-   * Unregisters a reaction. The reaction and it's dependencies will will be
-   * tracked for validation but will not automatically recompute when they
-   * become invalid.
+   * When implementing your own tagged value, call this method just after you
+   * modify the state of the value. The returned Tag can be stored as the new
+   * return value for your `$Tag` function. This will automatically schedule a
+   * sync of all reactors at the end of the current tast.
+   *
+   * @param value tagged value that changed
+   * @returns new tag value
    */
-  unregister(fn: ComputeFn, target: Object = null) {
-    const val = this.getComputedValue(fn, target, false);
-    if (val) {
-      this.reactions.delete(val.fn);
-      this.reactionDependencies = null;
-    }
-  }
+  changed(value: TrackedValue): Tag;
 
-  // ............................
-  // FLUSHING CHANGES
-  //
+  /** Registers a reactable so that it will refresh automatically */
+  register(reactable: Reactable): void;
 
-  /**
-   * Schedules the reactor to flush any pending changes. This is called
-   * automatically anytime a change is recorded, so you don't usually
-   * need to call it yourself.
-   */
-  flush() {
-    defer(this.flushNow);
-  }
+  /** Unregisters a reactable */
+  unregister(reactable: Reactable): void;
 
-  /**
-   * Immediately flushes any changes. Except for testing, you shouldn't call
-   * this method yourself.
-   */
-  flushNow = () => {
-    const { dependents } = this;
-    defer.cancel(this.flushNow); // in case called outside of deferral
-    let changes: Set<TrackedValue>;
-    const active = this.getReactionDependencies();
-    while ((changes = this.changes)) {
-      this.changes = null;
-      for (const change of changes) {
-        const deps = dependents.get(change);
-        if (deps)
-          for (const dep of deps) {
-            if (!active.has(dep)) continue;
-            if (!this.validate(dep)) dep.recompute(this);
-          }
-      }
-    }
-    this.flushed = this.current;
-  };
+  /** Returns true if the tagged value appears to be up to date */
+  validate(val: TrackedValue, changes?: Set<TrackedValue>): boolean;
 
-  // ....................................
-  // INTERNALS
-  //
+  /** Used by computed functions to capture dependencies */
+  capture<T, A extends any[]>(
+    fn: ComputeFn<T, A>,
+    prior?: T,
+    args?: A
+  ): [T, Set<TrackedValue>];
 
-  private getReactionDependencies() {
-    let { reactionDependencies, reactions } = this;
-    if (reactionDependencies) return reactionDependencies;
-    reactionDependencies = this.reactionDependencies = new WeakSet();
+  /** Used by computed functions to record dependencies */
+  setDependencies(val: TrackedValue, deps: Set<TrackedValue>): void;
 
-    const addAllDependencies = (val: TrackedValue) => {
-      if (reactionDependencies.has(val)) return;
-      reactionDependencies.add(val);
-      if (val instanceof ComputedValue) {
-        const deps = val.dependencies;
-        if (deps) for (const dep of deps) addAllDependencies(dep);
-      }
-    };
-
-    for (const reaction of reactions) {
-      const val = this.getComputedValue(reaction, null, false);
-      if (val) addAllDependencies(val);
-    }
-    return reactionDependencies;
-  }
-
-  private getStaticValue(
-    key: PropertyKey,
-    target: Object,
-    createIfNeeded: boolean
-  ) {
-    const { statics } = this;
-    if (!target) target = DEFAULT_TARGET;
-    let keys = statics.get(target);
-    if (!keys && createIfNeeded) {
-      keys = new Map<PropertyKey, StaticValue>();
-      statics.set(target, keys);
-    }
-    let val = keys && keys.get(key);
-    if (!val && createIfNeeded) {
-      val = new StaticValue(target, key);
-      keys.set(key, val);
-    }
-    return val;
-  }
-
-  private getComputedValue<T, O>(
-    fn: ComputeFn<T, O>,
-    target: O,
-    createIfNeeded: boolean
-  ) {
-    const { computes, boundComputes } = this;
-
-    if (target) {
-      let bound = boundComputes.get(target);
-      if (!bound && createIfNeeded) {
-        bound = new WeakMap();
-        boundComputes.set(target, bound);
-      }
-      let boundFn = bound && bound.get(fn);
-      if (!boundFn && createIfNeeded) {
-        boundFn = (prior: T, target: O) => fn(prior, target);
-        bound.set(fn, boundFn);
-      }
-      fn = boundFn;
-    }
-
-    let val = fn && computes.get(fn);
-    if (!val && createIfNeeded) {
-      val = new ComputedValue(fn);
-      computes.set(fn, val);
-    }
-    return val;
-  }
-
-  /** Recorded accesses while capturing */
-  private accesses: Set<TrackedValue>;
-
-  /** All static values, keyed by target object */
-  private statics = new WeakMap<Object, Map<PropertyKey, StaticValue>>();
-
-  /** All computed values, keyed by fn. */
-  private computes = new WeakMap<ComputeFn, ComputedValue>();
-
-  /** Map of values dependent upon the key */
-  private dependents = new WeakMap<TrackedValue, Set<ComputedValue>>();
-
-  /** Set of queued changes since last flush */
-  private changes: Set<TrackedValue>;
-
-  /**
-   * Registered reactions. Only direct and indirect dependents of these
-   * functions will be proactively recomputed
-   */
-  private reactions = new Set<ComputeFn>();
-  private reactionDependencies: WeakSet<TrackedValue>;
-
-  private boundComputes = new WeakMap<Object, WeakMap<ComputeFn, ComputeFn>>();
+  /** Used by computed functions to retrieve dependencies */
+  getDependencies(val: TrackedValue, expand?: boolean): Set<TrackedValue>;
 }
 
-export const reactor = new Reactor();
+const makeReaction_ = (i, u, t) => new Reaction(i, u, t);
+const makeValue_ = (k, t) => new Value();
 
-// ......................
-// HELPERS
-//
+export const reactor = ((input, update?, target?) => {
+  const reaction = memo(makeReaction_, input, update, target);
+  reactor.manager.register(reaction);
+  return reaction;
+}) as ReactorFn;
 
-class StaticValue implements TrackedValue {
-  constructor(readonly target: Object, key: PropertyKey) {}
+reactor.manager = new Manager();
 
-  /** Saved value */
-  value: any;
+reactor.accessed = (value: TrackedValue) => reactor.manager.accessed(value);
+reactor.changed = (value: TrackedValue) => reactor.manager.changed(value);
+reactor.register = reactable => reactor.manager.register(reactable);
+reactor.unregister = reactable => reactor.manager.unregister(reactable);
+reactor.validate = (val, changes?) => reactor.manager.validate(val, changes);
+reactor.capture = (fn, prior?, args?) =>
+  reactor.manager.capture(fn, prior, args);
+reactor.setDependencies = (val, deps) =>
+  reactor.manager.setDependencies(val, deps);
+reactor.getDependencies = (val, expand = false) =>
+  reactor.manager.getDependencies(val, expand);
 
-  /** Set to current whenever the value is changed */
-  changed = Revision.NEVER;
+reactor.compute = (fn, ...args) => ComputedValue.get(fn, ...args).get();
 
-  get(reactor: Reactor) {
-    reactor.accessed(this);
-    return this.value;
+reactor.get = (key, target?, initialValue?) =>
+  memo(makeValue_, key, target).get(initialValue);
+reactor.set = (key, v, target?) => memo(makeValue_, key, target).set(v);
+
+Object.defineProperty(reactor, "top", {
+  get() {
+    return this.manager.top;
   }
-
-  set(value: any, reactor: Reactor) {
-    this.value = value;
-    this.changed = reactor.changed(this);
-  }
-
-  initialize(v: any, reactor: Reactor) {
-    this.value = v;
-    this.changed = reactor.current;
-  }
-
-  [$Validated]() {
-    return this.changed;
-  }
-}
-
-class ComputedValue<T = any> implements TrackedValue {
-  constructor(readonly fn: ComputeFn<T>) {}
-
-  /** Last computed value */
-  private value: T;
-
-  /** Revision when the value was last known valid */
-  private validated = Revision.NEVER;
-
-  /** Revision when the value was last computed */
-  private computed = Revision.NEVER;
-
-  /** Captured dependencies when value was last computed */
-  dependencies: Set<TrackedValue>;
-
-  get(reactor: Reactor) {
-    reactor.accessed(this);
-    if (this[$Validated](reactor.flushed, null, reactor))
-      this.recompute(reactor);
-    return this.value;
-  }
-
-  /** Recomputes the value, assuming it is invalid */
-  recompute(reactor: Reactor) {
-    const prior = this.value;
-    let [value, deps] = reactor.capture(this.fn, prior);
-    value = reuse(value, prior);
-    if (value !== prior) {
-      this.computed = reactor.changed(this);
-      // never recompute
-      if (deps && deps.size === 0) this.computed = Revision.CONSTANT;
-    }
-    this.validated = reactor.current;
-    reactor.recordDependents(this, deps, this.dependencies);
-    this.dependencies = deps;
-  }
-
-  invalidate() {
-    this.computed = this.validated = Revision.NEVER;
-  }
-
-  [$Validated](rev: Revision, changes: Set<TrackedValue>, reactor: Reactor) {
-    const { validated, computed, dependencies } = this;
-    const current = reactor.current;
-    if (validated >= current) return validated;
-    let valid = computed === Revision.CONSTANT;
-
-    // potentially still valid if it hasn't changed since the last flush
-    // still valid if dependencies are known and all dependencies are valid
-    // note that initiate state of changed is NEVER which is always > flushed
-    if (!valid && computed <= rev) {
-      const deps = dependencies;
-      if (deps) {
-        valid = true;
-        for (const dep of deps) {
-          if (changes && !changes.has(dep)) continue;
-          valid = reactor.validate(dep, changes);
-          if (!valid) break;
-        }
-      }
-    }
-    return (this.validated = valid ? current : Revision.NEVER);
-  }
-}
-
-const DEFAULT_TARGET = {};
+});
 
 export default reactor;
+
+import ComputedValue from "./computed-value";
+import Reaction from "./reaction";
+import Value from "./value";

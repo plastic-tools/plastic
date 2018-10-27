@@ -1,8 +1,9 @@
 {
   "name": "@plastic/core",
   "version": "1.0.0",
-  "description": "Core Utilities and Functions",
-  "license": "MIT",
+  "description": "Plastic Data Core Framework",
+  "license": "UNLICENSED",
+  "author": "Charles Jolley",
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
   "module": "dist/esm/index.js",
@@ -11,22 +12,17 @@
     "dist/"
   ],
   "scripts": {
-    "build": "plastic-tsc --build",
-    "dev": "plastic-tsc --build --watch",
-    "test": "jest",
+    "build": "stencil build",
+    "dev": "stencil build --watch --dev",
+    "test.jest": "stencil test --spec",
+    "test": "stencil test --spec",
+    "test.dev": "stencil test --spec --watchAll",
     "clean": "find dist -delete"
   },
   "devDependencies": {
-    "@types/jest": "^23.3.2",
+    "@stencil/core": "^0.15.0",
+    "@types/jest": "^23.3.7",
     "jest": "^23.6.0",
-    "@plastic/compiler": "1.0.0"
-  },
-  "jest": {
-    "preset": "@plastic/compiler",
-    "globals": {
-      "ts-jest": {
-        "compiler": "@plastic/compiler"
-      }
-    }
+    "jest-cli": "^23.6.0"
   }
 }

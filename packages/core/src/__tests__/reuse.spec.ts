@@ -1,4 +1,4 @@
-import reuse, { $Reuse, Reusable } from "../reuse";
+import reuse, { $Reuse } from "../reuse";
 
 describe("reuse()", () => {
   describe("object", () => {

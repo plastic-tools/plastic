@@ -1,4 +1,4 @@
-import { TrackedValue, Revision, reactor, $Validated } from "../reactor";
+import reactor, { $Tag, Tag, TrackedValue } from "../reactor";
 
 const handler: ProxyHandler<any[]> = {
   get(target: any[], key: string, receiver: TrackedArray<any>) {
@@ -24,17 +24,16 @@ const handler: ProxyHandler<any[]> = {
  */
 export default class TrackedArray<T> extends Proxy<T[]>
   implements TrackedValue {
+  private _changed = Tag.NEVER;
   constructor(array: T[] = []) {
     super(array, handler);
   }
 
-  [$Validated]() {
+  [$Tag]() {
     return this._changed;
   }
 
   recordChange() {
     this._changed = reactor.changed(this);
   }
-
-  private _changed = Revision.NEVER;
 }

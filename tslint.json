@@ -10,7 +10,17 @@
     "interface-name": false,
     "trailing-comma": false,
     "member-access": false,
-    "no-object-literal-type-assertion": false
+    "no-object-literal-type-assertion": false,
+    "no-this-assignment": false,
+    "variable-name": [
+      true,
+      "ban-keywords",
+      "check-format",
+      "allow-pascal-case",
+      "allow-leading-underscore",
+      "allow-trailing-underscore"
+    ],
+    "no-switch-case-fall-through": true
   },
   "jsRules": {
     "curly": false

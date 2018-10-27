@@ -26,7 +26,6 @@
   "scripts": {
     "build": "tsc --build",
     "dev": "tsc -w",
-    "test": "jest",
     "clean": "rm -r lib"
   },
   "jest": {
