@@ -17,7 +17,7 @@ class MultilevelWeakMap {
     idx = 0,
     node = this.root
   ): MapNode | undefined {
-    if (idx > keys.length) return node;
+    if (idx >= keys.length) return node;
     const key = keys[idx];
     if (isObjectLike(key)) {
       node = node.get($weak) || node.set($weak, new WeakMap()).get($weak);
