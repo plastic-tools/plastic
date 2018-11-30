@@ -1,0 +1,10 @@
+{
+  "name": "@plastic/utils",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "module": "dist/es/index.js",
+  "license": "MIT",
+  "dependencies": {
+    "utility-types": "^2.1.0"
+  }
+}

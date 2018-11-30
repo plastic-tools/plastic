@@ -15,18 +15,6 @@
     {
       "name": "packages",
       "path": "packages"
-    },
-    {
-      "name": "@ionic/core",
-      "path": "local/ionic/core/src"
-    },
-    {
-      "name": "blaze-atoms",
-      "path": "node_modules/blaze-atoms"
-    },
-    {
-      "name": "@stencil",
-      "path": "local/stencil"
     }
   ],
   "settings": {
