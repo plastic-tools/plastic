@@ -25,10 +25,9 @@
       "**/www": true,
       "node_modules/**/dist": false,
       "**/node_modules": true,
-      "**/.rpt2_cache": true,
-      "**/compiler/lib": true
+      "**/.rpt2_cache": true
     },
-    "typescript.tsdk": "project/node_modules/@plastic/compiler/lib",
+    "typescript.tsdk": "./node_modules/typescript/lib",
     "jest.rootPath": ".",
     "jest.pathToJest": "yarn test",
     "eslint.packageManager": "yarn",

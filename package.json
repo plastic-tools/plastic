@@ -7,7 +7,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "test": "wsrun test.jest --exclude-missing",
+    "test": "jest",
     "clean": "wsrun clean --exclude-missing",
     "dev": "wsrun dev.app --recursive --exclude-missing",
     "dev.default": "wsrun dev.app @plastic/docs --recursive --exclude-missing",
@@ -24,6 +24,10 @@
     "tslint": "^5.11.0",
     "tslint-config-prettier": "^1.15.0",
     "tslint-react": "^3.6.0",
-    "wsrun": "^2.2.1"
+    "wsrun": "^2.2.1",
+    "@types/jest": "^23.3.10",
+    "jest": "^23.6.0",
+    "ts-jest": "^23.10.5",
+    "typescript": "^3.2.1"
   }
 }

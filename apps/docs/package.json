@@ -12,8 +12,7 @@
   "dependencies": {
     "@stencil/router": "^0.2.6",
     "blaze-atoms": "^1.5.0",
-    "ionicons": "^4.4.3",
-    "@plastic/core": "1.0.0"
+    "ionicons": "^4.4.3"
   },
   "devDependencies": {
     "@stencil/core": "^0.12.4",

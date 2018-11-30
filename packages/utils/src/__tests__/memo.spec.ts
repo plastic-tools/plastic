@@ -49,14 +49,14 @@ describe("memo.clear", () => {
   });
 
   it("should do nothing if function is not memoized", () => {
-    const fn = x => x;
+    const fn = (x: any) => x;
     expect(() => memo.clear(fn)).not.toThrow();
   });
 });
 
 describe("memo.has", () => {
   it("should return true when params are memoized", () => {
-    const fn = x => x;
+    const fn = (x: any) => x;
     memo(fn, "foo");
     expect(memo.has(fn)).toBe(false);
     expect(memo.has(fn, "foo")).toBe(true);

@@ -75,7 +75,7 @@ class MultilevelWeakMap {
     ...keys: any[]
   ): T {
     const node = this.walk(keys, true)!;
-    if (!node.has($value)) node.set($value, fn.apply(thisArg, keys));
+    if (!node.has($value)) node.set($value, fn.apply(thisArg, args));
     return node.get($value);
   }
 }
