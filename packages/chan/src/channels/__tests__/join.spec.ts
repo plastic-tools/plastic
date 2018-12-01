@@ -1,8 +1,5 @@
-import { join } from "../../channels";
-
-/** Returns a promise that resolve after the specified time has elapsed */
-const sleep = (period: number) =>
-  new Promise<void>(resolve => setTimeout(resolve, period));
+import { sleep } from "@plastic/utils";
+import join from "../join";
 
 describe(join, () => {
   it("should feed values from input channels", async () => {

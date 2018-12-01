@@ -1,4 +1,4 @@
-import { filter } from "../../channels";
+import filter from "../filter";
 
 describe(filter, () => {
   it("should remove filtered values", async () => {

@@ -1,6 +1,5 @@
 import { reuse } from "@plastic/utils";
-import pipe from "../pipe";
-import { Channel, nothing } from "../types";
+import { Channel, nothing } from "../core";
 
 /**
  * Returns a new channel that will skip duplicated values from the input.
@@ -14,7 +13,7 @@ import { Channel, nothing } from "../types";
  */
 export async function* dedup<T>(input: Channel<T>): Channel<T> {
   let prior: T | nothing = nothing;
-  for await (let next of pipe(input)) {
+  for await (let next of input) {
     if (prior !== nothing) next = reuse(next, prior);
     if (next !== prior) {
       prior = next;

@@ -1,8 +1,5 @@
+import { sleep } from "@plastic/utils";
 import { Channel } from "../core";
-
-/** Returns a promise that resolve after the specified time has elapsed */
-const sleep = (period: number) =>
-  new Promise<void>(resolve => setTimeout(resolve, period));
 
 /**
  * Returns a channel that will emit a new value every `period` milliseconds.

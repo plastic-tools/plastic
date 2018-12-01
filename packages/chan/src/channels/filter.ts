@@ -20,3 +20,5 @@ export function filter(fn: FilterFn, ch?: Channel): Channel | ChannelFilter {
   };
   return ch ? filtered(ch) : filtered;
 }
+
+export default filter;

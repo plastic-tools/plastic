@@ -1,4 +1,4 @@
-import { queue } from "../../channels";
+import queue from "../queue";
 
 describe(queue, () => {
   it("should read items previously put", async () => {

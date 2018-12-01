@@ -1,4 +1,4 @@
-import { map } from "../../channels";
+import map from "../map";
 
 describe(map, () => {
   async function* numbers(lim = 4) {

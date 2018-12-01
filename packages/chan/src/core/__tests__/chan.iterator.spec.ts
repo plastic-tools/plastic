@@ -1,5 +1,5 @@
 import { isAsyncIterable, ITERATOR_DONE_RESULT } from "@plastic/utils";
-import { chan } from "../../../core";
+import chan from "../chan";
 
 describe(chan, () => {
   describe("iterators", () => {

@@ -1,5 +1,5 @@
-import chan from "../pipe";
-import { AnyChannel, Channel, ChannelTypesTuple, isChannel } from "../types";
+import { isAsyncIterable } from "@plastic/utils";
+import { AnyChannel, Channel, ChannelTypesTuple } from "../core";
 import join from "./join";
 
 export interface LatestChannelMap {
@@ -14,8 +14,9 @@ export type LatestOutput<T extends LatestInput> = T extends [LatestChannelMap]
   ? ChannelTypesTuple<T>
   : never;
 
+/** @internal return tuple of value with input */
 async function* tagged<T>(input: Channel<T>): Channel<[T, Channel<T>]> {
-  for await (const next of chan(input)) yield [next, input];
+  for await (const next of input) yield [next, input];
 }
 
 const array = (channels: Channel[]) => {
@@ -58,11 +59,11 @@ export async function* latest<C extends LatestInput>(
   ...input: C
 ): Channel<LatestOutput<C>> {
   const { set, value, channels } =
-    input.length === 1 && !isChannel(input[0])
+    input.length === 1 && !isAsyncIterable(input[0])
       ? object(input[0])
       : array(input as Channel[]);
   const pending = new Set(channels);
-  for await (const [next, channel] of chan(join(...channels.map(tagged)))) {
+  for await (const [next, channel] of join(...channels.map(tagged))) {
     set(channel, next);
     pending.delete(channel);
     if (pending.size === 0) yield value() as LatestOutput<C>;

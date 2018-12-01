@@ -1,5 +1,5 @@
-import { once } from "../../channels";
 import { chan } from "../../core";
+import once from "../once";
 
 describe(once, () => {
   it("should iterate only one time", async () => {

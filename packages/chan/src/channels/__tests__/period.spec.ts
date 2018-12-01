@@ -1,4 +1,4 @@
-import { periodic } from "../../channels";
+import periodic from "../periodic";
 
 describe(periodic, () => {
   it("should tick per period", async () => {

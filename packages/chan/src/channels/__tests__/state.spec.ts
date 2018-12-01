@@ -1,4 +1,4 @@
-import { state } from "../../channels";
+import state from "../state";
 
 describe(state, () => {
   it("should emit initial state", async () => {

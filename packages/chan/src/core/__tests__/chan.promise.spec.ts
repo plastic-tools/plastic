@@ -1,4 +1,4 @@
-import { chan } from "../../../core";
+import chan from "../chan";
 
 describe(chan, () => {
   describe("promise", () => {

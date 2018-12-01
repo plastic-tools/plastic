@@ -1,4 +1,4 @@
-import { chan } from "../../../core";
+import chan from "../chan";
 
 /** Returns a noop channel */
 async function* noop(): AsyncIterableIterator<any> {

@@ -1,5 +1,5 @@
-import { repeat } from "../../channels";
 import { Channel } from "../../core";
+import repeat from "../repeat";
 
 // Expose some internal methods for testing
 interface RepeaterChannel<T = unknown> extends Channel<T> {
