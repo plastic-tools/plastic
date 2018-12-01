@@ -4,28 +4,28 @@ import {
   ASYNC_ITERATOR_DONE_RESULT,
   AsyncIteratorResult
 } from "@plastic/utils";
-import { Channel, ChannelFilter, ChannelTransform } from "../types";
+import { Channel, ChannelFilter } from "../core";
 
 class RepeaterChannel<T> implements Channel<T> {
   protected get iter() {
     return this._iter || (this._iter = this.input[Symbol.asyncIterator]());
   }
 
-  protected history = new WeakMap<
+  // start point to repeat for all listeners, unless there is a history
+  private _unresolved?: AsyncIteratorResult<T>;
+
+  // most recently retrieved value
+  private _top?: AsyncIteratorResult<T>;
+
+  /** how many items from start to top of history */
+  private _depth = 0;
+
+  private _history = new WeakMap<
     AsyncIteratorResult<T>,
     AsyncIteratorResult<T>
   >();
 
-  protected start?: AsyncIteratorResult<T>;
-
-  // start point to repeat for all listeners, unless there is a history
-  protected unresolved?: AsyncIteratorResult<T>;
-
-  // most recently retrieved value
-  protected top?: AsyncIteratorResult<T>;
-
-  /** how many items from start to top of history */
-  protected depth = 0;
+  private _start?: AsyncIteratorResult<T>;
   private _iter?: AnyIterator<T>;
 
   constructor(readonly input: Channel<T>, readonly limit: number) {}
@@ -35,14 +35,14 @@ class RepeaterChannel<T> implements Channel<T> {
       console.log("new iterator");
     }
     if (!prior) this.prune();
-    let next = prior ? this.history.get(prior) : this.start;
+    let next = prior ? this._history.get(prior) : this._start;
     if (!next) {
       // at top, go get the next unresolved value and add it to the top
-      next = this.fetch(this.top);
-      if (this.top) this.history.set(this.top, next);
-      this.top = next;
-      if (!this.unresolved) this.unresolved = next;
-      if (!this.start) this.start = this.unresolved;
+      next = this.fetch(this._top);
+      if (this._top) this._history.set(this._top, next);
+      this._top = next;
+      if (!this._unresolved) this._unresolved = next;
+      if (!this._start) this._start = this._unresolved;
     }
     return next;
   }
@@ -53,16 +53,16 @@ class RepeaterChannel<T> implements Channel<T> {
   /** if depth exceeds limit, move forward start until it isn't */
   protected prune() {
     while (
-      this.start &&
-      this.start !== this.unresolved &&
-      this.depth > this.limit
+      this._start &&
+      this._start !== this._unresolved &&
+      this._depth > this.limit
     ) {
-      this.start = this.history.get(this.start);
-      this.depth--;
+      this._start = this._history.get(this._start);
+      this._depth--;
     }
-    if (!this.start && (this.unresolved || this.depth > 0)) {
-      this.start = this.unresolved;
-      this.depth = 0;
+    if (!this._start && (this._unresolved || this._depth > 0)) {
+      this._start = this._unresolved;
+      this._depth = 0;
     }
   }
 
@@ -70,13 +70,14 @@ class RepeaterChannel<T> implements Channel<T> {
   protected async fetch(
     prior?: AsyncIteratorResult<T>
   ): AsyncIteratorResult<T> {
+    let done = true;
     try {
-      const done = prior ? (await prior).done : false;
+      done = prior ? (await prior).done : false;
       return done ? ASYNC_ITERATOR_DONE_RESULT : await this.iter.next();
     } finally {
       // unresolved should equal us since future results are waiting on this
-      this.unresolved = this.history.get(this.unresolved!);
-      this.depth++;
+      this._unresolved = this._history.get(this._unresolved!);
+      if (!done) this._depth++;
     }
   }
 }

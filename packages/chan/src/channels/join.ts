@@ -1,6 +1,5 @@
 import { tuple } from "@plastic/utils";
-import pipe from "../pipe";
-import { AnyChannel, Channel, MergedChannelTypes } from "../types";
+import { AnyChannel, Channel, MergedChannelTypes } from "../core";
 
 const next = async <T>(iter: AsyncIterator<T>) => {
   const { done, value } = await iter.next();
@@ -9,7 +8,7 @@ const next = async <T>(iter: AsyncIterator<T>) => {
 
 /**
  * Returns a new channel that will join all the values emitted from the input
- * channels into a single output stream. You can also add/remove
+ * channels into a single output stream.
  *
  * Closes when the input channels close. Throws when any input channel throws.
  *
@@ -20,7 +19,7 @@ export async function* join<C extends AnyChannel[], T = MergedChannelTypes<C>>(
 ): Channel<T> {
   const queue = new Map(
     inputs.map(input => {
-      const iter = pipe(input)[Symbol.asyncIterator]();
+      const iter = input[Symbol.asyncIterator]();
       return tuple(iter, next(iter));
     })
   );
@@ -28,7 +27,7 @@ export async function* join<C extends AnyChannel[], T = MergedChannelTypes<C>>(
     const { value, done, iter } = await Promise.race(queue.values());
     if (done) queue.delete(iter);
     else queue.set(iter, next(iter));
-    yield value;
+    if (value !== undefined) yield value;
   }
 }
 export default join;

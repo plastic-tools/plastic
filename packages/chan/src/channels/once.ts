@@ -1,4 +1,4 @@
-import { Channel } from "../types";
+import { Channel } from "../core";
 
 /**
  * Returns a channel that will iterate through the input once and then exits.

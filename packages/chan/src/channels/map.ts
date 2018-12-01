@@ -1,5 +1,4 @@
-import pipe from "../pipe";
-import { Channel, ChannelTransform, nothing } from "../types";
+import { Channel, ChannelTransform, nothing } from "../core";
 
 type MapReturnType<T = unknown> = (nothing | T) | Promise<nothing | T>;
 type MapFn<I = any, O = unknown> = (input: I) => MapReturnType<O>;
@@ -27,7 +26,7 @@ export function map<F extends MapFn>(fn: F): MapTransformOf<F>;
 export function map<T, R>(fn: MapFn<T, R>, ch: Channel<T>): Channel<R>;
 export function map(fn: MapFn, ch?: Channel): Channel | ChannelTransform {
   const mapped = async function*(input: Channel) {
-    for await (const next of pipe(input)) {
+    for await (const next of input) {
       const output = fn(next);
       if (output !== nothing) yield output;
     }

@@ -1,5 +1,3 @@
-import { isObjectLike } from "@plastic/utils";
-
 export const nothing = Symbol("nothing");
 export type nothing = typeof nothing;
 

@@ -1,5 +1,5 @@
-import repeat from "../../channels/repeat";
-import { Channel } from "../../types";
+import { repeat } from "../../channels";
+import { Channel } from "../../core";
 
 // Expose some internal methods for testing
 interface RepeaterChannel<T = unknown> extends Channel<T> {
@@ -59,7 +59,7 @@ describe(repeat, () => {
   });
 
   it("should replay 1 history item and track remainder", async () => {
-    const ch = repeat(numbers(), 1);
+    const ch = repeat(1)(numbers());
     const counts = [0, 0, 0, 0];
     await reader(ch, counts, 2, 2); // should replay previous item anyway
     expect(counts).toEqual([1, 2, 2, 2]);

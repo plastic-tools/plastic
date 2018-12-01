@@ -1,5 +1,4 @@
-import pipe from "../pipe";
-import { Channel, nothing } from "../types";
+import { Channel, nothing, pipe } from "../core";
 import queue from "./queue";
 import repeat from "./repeat";
 
@@ -36,3 +35,5 @@ export const state = <S>(initialValue?: S) =>
     values(initialValue),
     repeat(1)
   );
+
+export default state;

@@ -1,7 +1,7 @@
-import { Channel } from "../types";
+import { Channel } from "../core";
 
 /** Returns a promise that resolve after the specified time has elapsed */
-const timer = (period: number) =>
+const sleep = (period: number) =>
   new Promise<void>(resolve => setTimeout(resolve, period));
 
 /**
@@ -30,7 +30,7 @@ export async function* periodic(period = 1000): Channel<number> {
       yield count++;
     }
     // caught up, wait until the next period has passed
-    await timer(prior + period - Date.now());
+    await sleep(prior + period - Date.now());
   }
 }
 

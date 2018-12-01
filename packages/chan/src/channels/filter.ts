@@ -1,5 +1,4 @@
-import pipe from "../pipe";
-import { Channel, ChannelFilter } from "../types";
+import { Channel, ChannelFilter } from "../core";
 
 type FilterFn<T = any> = (input: T) => boolean;
 
@@ -17,7 +16,7 @@ export function filter(fn: FilterFn): ChannelFilter;
 export function filter<T>(fn: FilterFn<T>, ch: Channel<T>): Channel<T>;
 export function filter(fn: FilterFn, ch?: Channel): Channel | ChannelFilter {
   const filtered = async function*<T>(input: Channel<T>): Channel<T> {
-    for await (const next of pipe(input)) if (fn(next)) yield next;
+    for await (const next of input) if (fn(next)) yield next;
   };
   return ch ? filtered(ch) : filtered;
 }

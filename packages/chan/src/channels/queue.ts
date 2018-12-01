@@ -4,7 +4,7 @@ import {
   AsyncIteratorResult,
   ITERATOR_DONE_RESULT
 } from "@plastic/utils";
-import { $PipeInput, Channel } from "../types";
+import { $PipeInput, Channel } from "../core";
 
 interface QueueWriter<T> {
   /** Posts a new value to the channel. */

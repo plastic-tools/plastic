@@ -1,5 +1,5 @@
 import { ITERATOR_DONE_RESULT } from "@plastic/utils";
-import { chan } from "../../core";
+import { chan } from "../../../core";
 
 describe(chan, () => {
   describe("iterable", () => {

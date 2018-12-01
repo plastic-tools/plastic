@@ -1,6 +1,4 @@
-import { chan } from "../chan";
-import pipe from "../pipe";
-import { Channel } from "../types";
+import { chan, Channel, pipe } from "../../core";
 
 describe(pipe, () => {
   it("should return channel if passed by itself", () => {
