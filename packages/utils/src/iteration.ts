@@ -47,6 +47,7 @@ export const isIterator = <T = unknown>(x: any): x is Iterator<T> =>
   (undefined === x.return || "function" === typeof x.return) &&
   (undefined === x.throw || "function" === typeof x.throw);
 
+// prettier-ignore
 /**
  * Returns true and casts type of `x` appears to be an async iterator.
  *
@@ -55,8 +56,8 @@ export const isIterator = <T = unknown>(x: any): x is Iterator<T> =>
  * exclusively if you know for sure the value cannot be an regular iterator (or
  * if your usage will not matter).
  */
-export const isAsyncIterator = <T = unknown>(x: any): x is AsyncIterator<T> =>
-  isIterator(x);
+export const isAsyncIterator =
+  (isIterator as unknown) as (<T = unknown>(x: any) => x is AsyncIterator<T>);
 
 /** Returns true and casts type if `x` appears to be an iterable */
 export const isIterable = <T = unknown>(x: any): x is Iterable<T> =>

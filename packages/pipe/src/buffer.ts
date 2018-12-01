@@ -29,7 +29,7 @@ interface BufferItem<T> extends AsyncIteratorResult<T> {
  * instances until you try to iterate more than once.
  *
  */
-export class BufferChannel<T> implements AsyncIterableIterator<T> {
+export class BufferChannel<T = any> implements AsyncIterableIterator<T> {
   /** The current history limit for the buffer */
   get limit() {
     return this._limit;
@@ -47,6 +47,10 @@ export class BufferChannel<T> implements AsyncIterableIterator<T> {
       this._size++;
     }
     return this._unputvar;
+  }
+
+  private set _unput(item: undefined | BufferItem<T>) {
+    this._unputvar = item;
   }
 
   get writable() {
@@ -67,6 +71,11 @@ export class BufferChannel<T> implements AsyncIterableIterator<T> {
 
   /** Most recently read item. If undefined, no reading yet. Return start */
   private _top?: BufferItem<T>;
+
+  /** The number of elements a new iterator can expect to receive */
+  get size() {
+    return this._size;
+  }
 
   private _size = 0;
 
@@ -132,25 +141,23 @@ export class BufferChannel<T> implements AsyncIterableIterator<T> {
 
   /** Adds a new iterator result to the queue. */
   put(result: BufferItemValue<T>): BufferItem<T> {
-    let item = this._unput;
+    const unput = this._unput;
     const limit = this._limit;
-    if (item) {
-      item.put!(result);
-      this._unputvar = this._items.get(item);
+    let ret: BufferItem<T>;
+    if (unput) {
+      // resolve unput items first
+      unput.put!(result);
+      this._unput = this._items.get(unput); // update top to next unput item
       this._size++;
-    } else if (limit <= 0 && !isPromiseLike(result)) {
-      // fastpath: no unput items to fill, history is disabled, and the
-      // result is accessible. process now and drop on the floor.
-      if (result.done) this.final = ASYNC_ITERATOR_DONE_RESULT;
-      item = ASYNC_ITERATOR_DONE_RESULT;
+      ret = unput;
     } else {
       // no unput items to fill, so just add to the end of the queue, to be
       // read by future calls to next
-      item = this._createBufferItem(result, this._top);
-      this._addToTop(item);
+      ret = this._createBufferItem(result, this._top);
+      this._addToTop(ret);
       this._size++;
     }
-    return item;
+    return ret;
   }
 
   /**
