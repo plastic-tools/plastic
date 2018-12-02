@@ -5,12 +5,8 @@
       "path": "."
     },
     {
-      "name": "apps/site",
-      "path": "apps/site"
-    },
-    {
-      "name": "apps/docs",
-      "path": "apps/docs"
+      "name": "site",
+      "path": "site"
     },
     {
       "name": "packages",
@@ -21,8 +17,8 @@
     "tslint.autoFixOnSave": true,
     "files.exclude": {
       "**/.stencil": true,
-      "*/**/dist": false,
-      "**/www": true,
+      "*/**/dist": true,
+      "**/build": true,
       "node_modules/**/dist": false,
       "**/node_modules": true,
       "**/.rpt2_cache": true

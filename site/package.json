@@ -1,0 +1,16 @@
+{
+  "name": "@plastic/site",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "clean": "rimraf build .rpt2_cache"
+  },
+  "dependencies": {
+    "@plastic/reactor": "1.0.0",
+    "@plastic/host": "1.0.0",
+    "@plastic/utils": "1.0.0"
+  }
+}

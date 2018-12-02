@@ -1,5 +1,5 @@
 {
-  "name": "@plastic/utils",
+  "name": "@plastic/reactor",
   "version": "1.0.0",
   "main": "dist/cjs/index.js",
   "module": "dist/es/index.js",
@@ -11,6 +11,7 @@
     "clean": "rimraf dist .rpt2_cache"
   },
   "dependencies": {
-    "utility-types": "^2.1.0"
+    "@plastic/utils": "1.0.0",
+    "lit-html": "^0.14.0"
   }
 }

@@ -1,7 +1,7 @@
 {
   "files.exclude": {
     "packages": true,
-    "apps": true,
+    "site": true,
     "local": true
   }
 }
